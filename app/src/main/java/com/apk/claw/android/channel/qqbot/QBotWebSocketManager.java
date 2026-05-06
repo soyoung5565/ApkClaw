@@ -292,7 +292,15 @@ public class QBotWebSocketManager {
             public void onFailure(WebSocket webSocket, Throwable t, Response response) {
                 // 如果当前 webSocket 已经被新连接替换，忽略旧连接的回调
                 if (webSocket != QBotWebSocketManager.this.webSocket) return;
-                XLog.e(TAG, "WebSocket连接失败: " + (t != null ? t.getMessage() : "null") + ", response=" + response);
+                String errorMsg = t != null ? t.getClass().getSimpleName() + ": " + t.getMessage() : "null";
+                XLog.e(TAG, "WebSocket连接失败: " + errorMsg + ", response=" + response);
+                // Network diagnostics
+                try {
+                    java.net.InetAddress[] addrs = java.net.InetAddress.getAllByName("api.sgroup.qq.com");
+                    XLog.i(TAG, "DNS可达: " + addrs[0].getHostAddress());
+                } catch (java.net.UnknownHostException e) {
+                    XLog.e(TAG, "DNS不可达: " + e.getMessage());
+                }
                 isConnected = false;
                 notifyConnectionStateChanged(false);
                 if (!stopped) {
@@ -793,6 +801,24 @@ public class QBotWebSocketManager {
         heartbeatHandler.removeCallbacksAndMessages(null);
         heartbeatHandler.postDelayed(() -> {
             if (stopped) { isReconnecting = false; return; }
+            // Network diagnostics before reconnecting
+            try {
+                java.net.InetAddress[] addrs = java.net.InetAddress.getAllByName("api.sgroup.qq.com");
+                XLog.i(TAG, "DNS解析成功: api.sgroup.qq.com -> " + addrs[0].getHostAddress());
+            } catch (java.net.UnknownHostException e) {
+                XLog.e(TAG, "DNS解析失败: " + e.getMessage() + " (网络可能断开)");
+                // Check general internet
+                try {
+                    java.net.InetAddress google = java.net.InetAddress.getByName("www.google.com");
+                    XLog.w(TAG, "Google DNS可达，但QQ域名解析失败 (可能是DNS污染)");
+                } catch (java.net.UnknownHostException e2) {
+                    XLog.e(TAG, "完全无网络连接，等待网络恢复后再重连");
+                }
+                isReconnecting = false;
+                // Retry with backoff
+                reconnect();
+                return;
+            }
             if (gatewayUrl != null) {
                 connectWebSocket(gatewayUrl);
             } else {
