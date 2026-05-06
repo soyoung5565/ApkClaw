@@ -47,9 +47,22 @@ class ClawApplication : BaseApp() {
         }
 
         Thread({
-            if (KVUtils.hasLlmConfig()) {
-                appViewModelInstance.initAgent()
-                appViewModelInstance.afterInit()
+            try {
+                val hasConfig = KVUtils.hasLlmConfig()
+                XLog.i(TAG, "app-async-init: hasLlmConfig=$hasConfig")
+                XLog.i(TAG, "app-async-init: LLM key='${KVUtils.getLlmApiKey().take(10)}...'")
+                XLog.i(TAG, "app-async-init: QQ appid='${KVUtils.getQqAppId()}'")
+                XLog.i(TAG, "app-async-init: Feishu appid='${KVUtils.getFeishuAppId()}'")
+                if (hasConfig) {
+                    appViewModelInstance.initAgent()
+                    XLog.i(TAG, "app-async-init: initAgent done")
+                    appViewModelInstance.afterInit()
+                    XLog.i(TAG, "app-async-init: afterInit done")
+                } else {
+                    XLog.w(TAG, "app-async-init: no LLM config, skipping agent init")
+                }
+            } catch (e: Exception) {
+                XLog.e(TAG, "app-async-init failed", e)
             }
         }, "app-async-init").start()
     }

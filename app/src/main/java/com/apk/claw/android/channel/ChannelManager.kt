@@ -61,6 +61,8 @@ object ChannelManager {
         wechatBotToken: String? = null,
         wechatApiBaseUrl: String? = null
     ) {
+        com.apk.claw.android.utils.XLog.i("ChannelManager", "init: QQ=$qqAppId, Feishu=$feishuAppId, Telegram=$telegramBotToken")
+
         handlers[Channel.DINGTALK] = DingTalkChannelHandler(
             scope, httpClient,
             dingtalkAppKey?.takeIf { it.isNotEmpty() } ?: "",

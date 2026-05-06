@@ -15,13 +15,19 @@ class ChannelSetup(
 ) {
 
     fun setup() {
+        val qqId = KVUtils.getQqAppId()
+        val qqSecret = KVUtils.getQqAppSecret()
+        val feishuId = KVUtils.getFeishuAppId()
+        val feishuSecret = KVUtils.getFeishuAppSecret()
+        com.apk.claw.android.utils.XLog.i("ChannelSetup", "setup: QQ=${qqId.take(5)}.../${qqSecret.take(5)}..., Feishu=${feishuId.take(5)}.../${feishuSecret.take(5)}...")
+
         ChannelManager.init(
             dingtalkAppKey = KVUtils.getDingtalkAppKey().ifEmpty { null },
             dingtalkAppSecret = KVUtils.getDingtalkAppSecret().ifEmpty { null },
-            feishuAppId = KVUtils.getFeishuAppId().ifEmpty { null },
-            feishuAppSecret = KVUtils.getFeishuAppSecret().ifEmpty { null },
-            qqAppId = KVUtils.getQqAppId().ifEmpty { null },
-            qqAppSecret = KVUtils.getQqAppSecret().ifEmpty { null },
+            feishuAppId = feishuId.ifEmpty { null },
+            feishuAppSecret = feishuSecret.ifEmpty { null },
+            qqAppId = qqId.ifEmpty { null },
+            qqAppSecret = qqSecret.ifEmpty { null },
             discordBotToken = KVUtils.getDiscordBotToken().ifEmpty { null },
             telegramBotToken = KVUtils.getTelegramBotToken().ifEmpty { null },
             wechatBotToken = KVUtils.getWechatBotToken().ifEmpty { null },
