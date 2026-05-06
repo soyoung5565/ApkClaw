@@ -45,6 +45,8 @@ public class QBotWebSocketManager {
     private volatile boolean heartbeatAckReceived = true;
     private volatile boolean stopped = false;
     private volatile boolean isReconnecting = false;
+    private volatile int reconnectAttempt = 0;
+    private static final int MAX_RECONNECT_DELAY_MS = 60000; // 60s max
     private int shardCount = 1;
     private int currentShard = 0;
 
@@ -397,6 +399,7 @@ public class QBotWebSocketManager {
             sessionId = readyData.get("session_id").getAsString();
             XLog.d(TAG, "获取到SessionId: " + sessionId);
             XLog.d(TAG, "WebSocket连接已就绪，开始接收事件");
+            reconnectAttempt = 0; // 连接成功，重置重连计数
             
             if (eventCallback != null) {
                 eventCallback.onSuccess(gson.toJson(message));
@@ -783,14 +786,20 @@ public class QBotWebSocketManager {
             return;
         }
         isReconnecting = true;
-        XLog.w(TAG, "尝试重连WebSocket, 当前状态=" + isConnected + ", gatewayUrl=" + (gatewayUrl != null));
+        reconnectAttempt++;
+        // Exponential backoff: 1s, 2s, 4s, 8s, 16s, 32s, 60s max
+        long delayMs = Math.min((long)(1000 * Math.pow(2, reconnectAttempt - 1)), MAX_RECONNECT_DELAY_MS);
+        XLog.w(TAG, "尝试重连WebSocket (第" + reconnectAttempt + "次), 延迟" + delayMs + "ms, 当前状态=" + isConnected + ", gatewayUrl=" + (gatewayUrl != null));
         heartbeatHandler.removeCallbacksAndMessages(null);
-        if (gatewayUrl != null) {
-            connectWebSocket(gatewayUrl);
-        } else {
-            start();
-        }
-        isReconnecting = false;
+        heartbeatHandler.postDelayed(() -> {
+            if (stopped) { isReconnecting = false; return; }
+            if (gatewayUrl != null) {
+                connectWebSocket(gatewayUrl);
+            } else {
+                start();
+            }
+            isReconnecting = false;
+        }, delayMs);
     }
     
     public boolean isConnected() {

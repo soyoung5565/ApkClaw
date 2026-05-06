@@ -77,18 +77,31 @@ class FeiShuChannelHandler(
             return
         }
 
-        apiClient = com.lark.oapi.Client.newBuilder(appId, appSecret).build()
+        XLog.i(TAG, "飞书初始化开始: appId=${appId.take(8)}...")
 
-        wsClient = FeishuWsClient.Builder(appId, appSecret)
-            .eventHandler(eventHandler)
-            .build()
+        try {
+            apiClient = com.lark.oapi.Client.newBuilder(appId, appSecret).build()
+            XLog.i(TAG, "飞书 API 客户端创建成功")
+        } catch (e: Exception) {
+            XLog.e(TAG, "飞书 API 客户端创建失败", e)
+        }
+
+        try {
+            wsClient = FeishuWsClient.Builder(appId, appSecret)
+                .eventHandler(eventHandler)
+                .build()
+            XLog.i(TAG, "飞书 WebSocket 客户端创建成功")
+        } catch (e: Exception) {
+            XLog.e(TAG, "飞书 WebSocket 客户端创建失败", e)
+        }
 
         scope.launch {
             try {
+                XLog.i(TAG, "飞书 WebSocket 开始连接...")
                 wsClient?.start()
                 XLog.i(TAG, "飞书 WebSocket 客户端已启动")
             } catch (e: Exception) {
-                XLog.e(TAG, "飞书 WebSocket 客户端启动失败", e)
+                XLog.e(TAG, "飞书 WebSocket 客户端启动失败: ${e.javaClass.simpleName}: ${e.message}", e)
             }
         }
     }
