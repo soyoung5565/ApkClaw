@@ -1,8 +1,9 @@
 package com.apk.claw.android.ui.settings
 
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -13,15 +14,16 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.apk.claw.android.R
 import com.apk.claw.android.base.BaseActivity
+import com.apk.claw.android.utils.LogRecorder
+import com.apk.claw.android.utils.XLog
 import com.apk.claw.android.widget.CommonToolbar
 import com.apk.claw.android.widget.KButton
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.util.Timer
+import java.util.TimerTask
 
 /**
- * HTTP 日志查看器 — 查看、分享、清空网络请求日志
+ * HTTP 日志查看器 + 实时录制工具
  */
 class LogViewerActivity : BaseActivity() {
 
@@ -29,6 +31,10 @@ class LogViewerActivity : BaseActivity() {
     private lateinit var rvLogs: RecyclerView
     private lateinit var tvEmpty: TextView
     private lateinit var tvLogCount: TextView
+    private lateinit var btnStartRecording: KButton
+    private lateinit var recordingBar: View
+    private lateinit var tvRecordingStatus: TextView
+    private var refreshTimer: Timer? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,20 +50,73 @@ class LogViewerActivity : BaseActivity() {
         rvLogs = findViewById(R.id.rvLogs)
         tvEmpty = findViewById(R.id.tvEmpty)
         tvLogCount = findViewById(R.id.tvLogCount)
+        btnStartRecording = findViewById(R.id.btnStartRecording)
+        recordingBar = findViewById(R.id.recordingBar)
+        tvRecordingStatus = findViewById(R.id.tvRecordingStatus)
 
         rvLogs.layoutManager = LinearLayoutManager(this)
 
+        btnStartRecording.setOnClickListener { startRecording() }
+        findViewById<KButton>(R.id.btnStopRecording).setOnClickListener { stopRecording() }
         findViewById<KButton>(R.id.btnShare).setOnClickListener { shareAllLogs() }
         findViewById<KButton>(R.id.btnClear).setOnClickListener { clearLogs() }
 
+        updateRecordingUI()
         loadLogs()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Auto-refresh every 2s when recording
+        refreshTimer = Timer()
+        refreshTimer?.schedule(object : TimerTask() {
+            override fun run() {
+                if (LogRecorder.isRecording()) {
+                    runOnUiThread { loadLogs() }
+                }
+            }
+        }, 2000, 2000)
+    }
+
+    override fun onPause() {
+        refreshTimer?.cancel()
+        refreshTimer = null
+        super.onPause()
+    }
+
+    private fun startRecording() {
+        val file = LogRecorder.start(cacheDir)
+        XLog.i("LogViewer", "Recording started: ${file.absolutePath}")
+        Toast.makeText(this, getString(R.string.log_recorder_started), Toast.LENGTH_SHORT).show()
+        updateRecordingUI()
+        loadLogs()
+    }
+
+    private fun stopRecording() {
+        val file = LogRecorder.stop()
+        if (file != null) {
+            Toast.makeText(this, getString(R.string.log_recorder_stopped), Toast.LENGTH_SHORT).show()
+            XLog.i("LogViewer", "Recording stopped: ${file.absolutePath}")
+        }
+        updateRecordingUI()
+        loadLogs()
+    }
+
+    private fun updateRecordingUI() {
+        val isRecording = LogRecorder.isRecording()
+        recordingBar.visibility = if (isRecording) View.VISIBLE else View.GONE
+        btnStartRecording.visibility = if (isRecording) View.GONE else View.VISIBLE
+        if (isRecording) {
+            // Animate recording dot
+            tvRecordingStatus.text = getString(R.string.log_recorder_recording)
+        }
     }
 
     private fun loadLogs() {
         val files = if (logDir.exists()) {
             logDir.listFiles()
                 ?.filter { it.isFile && it.name.endsWith(".txt") }
-                ?.sortedByDescending { it.name }
+                ?.sortedByDescending { it.lastModified() }
                 ?: emptyList()
         } else {
             emptyList()
@@ -70,7 +129,8 @@ class LogViewerActivity : BaseActivity() {
         } else {
             rvLogs.visibility = View.VISIBLE
             tvEmpty.visibility = View.GONE
-            tvLogCount.text = "${files.size} log files"
+            val recording = if (LogRecorder.isRecording()) " 🔴 Recording" else ""
+            tvLogCount.text = "${files.size} log files$recording"
             rvLogs.adapter = LogAdapter(files)
         }
     }
@@ -87,10 +147,9 @@ class LogViewerActivity : BaseActivity() {
             return
         }
 
-        // Merge all logs into a single file for sharing
         val mergedFile = File(cacheDir, "myclaw_all_logs.txt")
         mergedFile.bufferedWriter().use { writer ->
-            files.sortedByDescending { it.name }.forEach { file ->
+            files.sortedByDescending { it.lastModified() }.forEach { file ->
                 writer.write("========== ${file.name} ==========\n")
                 writer.write(file.readText())
                 writer.write("\n\n")
@@ -108,6 +167,10 @@ class LogViewerActivity : BaseActivity() {
     }
 
     private fun clearLogs() {
+        if (LogRecorder.isRecording()) {
+            Toast.makeText(this, "Stop recording first", Toast.LENGTH_SHORT).show()
+            return
+        }
         if (logDir.exists()) {
             logDir.listFiles()?.forEach { it.delete() }
         }
@@ -115,7 +178,7 @@ class LogViewerActivity : BaseActivity() {
         Toast.makeText(this, getString(R.string.log_viewer_cleared), Toast.LENGTH_SHORT).show()
     }
 
-    // ==================== RecyclerView Adapter ====================
+    // ==================== Adapter ====================
 
     private inner class LogAdapter(private val files: List<File>) :
         RecyclerView.Adapter<LogAdapter.LogViewHolder>() {
@@ -134,52 +197,20 @@ class LogViewerActivity : BaseActivity() {
 
         override fun onBindViewHolder(holder: LogViewHolder, position: Int) {
             val file = files[position]
-            val content = file.readText()
-            val name = file.nameWithoutExtension // e.g. 20260506_210130045_GET
+            val content = try { file.readText() } catch (_: Exception) { "(read error)" }
+            val isRecording = file.name.startsWith("recording_")
 
-            // Parse timestamp and method from filename
-            val parts = name.split("_", limit = 2)
-            val method = if (parts.size > 1) parts[1].substringAfter("_").ifEmpty { "REQUEST" } else "REQUEST"
-
-            // Extract URL from content
-            val url = content.lineSequence()
-                .firstOrNull { it.startsWith("URL: ") }
-                ?.removePrefix("URL: ") ?: ""
-
-            // Extract status from content
-            val status = content.lineSequence()
-                .firstOrNull { it.startsWith("Status: ") }
-                ?.removePrefix("Status: ") ?: ""
-
-            // Extract duration
-            val duration = content.lineSequence()
-                .firstOrNull { it.startsWith("Duration: ") }
-                ?.removePrefix("Duration: ") ?: ""
-
-            val header = if (url.isNotBlank()) {
-                "${method.take(10)}  ${url.take(80)}"
-            } else {
-                file.name
-            }
-
-            val meta = buildString {
-                if (status.isNotBlank()) append("Status: $status  ")
-                if (duration.isNotBlank()) append("Duration: $duration  ")
-                append("Size: ${file.length() / 1024}KB")
-            }
+            val header = if (isRecording) "🔴 ${file.name}" else file.nameWithoutExtension
+            val sizeKB = file.length() / 1024
 
             holder.tvHeader.text = header
-            holder.tvMeta.text = meta
+            holder.tvMeta.text = "Size: ${sizeKB}KB"
             holder.tvContent.text = content
-
-            // Toggle expand/collapse on click
             holder.tvContent.maxLines = 20
+
             holder.itemView.setOnClickListener {
-                if (holder.tvContent.maxLines == 20) {
-                    holder.tvContent.maxLines = Int.MAX_VALUE
-                } else {
-                    holder.tvContent.maxLines = 20
-                }
+                holder.tvContent.maxLines =
+                    if (holder.tvContent.maxLines == 20) Int.MAX_VALUE else 20
             }
         }
 

@@ -1,5 +1,6 @@
 package com.apk.claw.android.agent.langchain.http;
 
+import com.apk.claw.android.utils.LogRecorder;
 import com.apk.claw.android.utils.XLog;
 
 import java.io.File;
@@ -63,6 +64,9 @@ public class FileLoggingInterceptor implements Interceptor {
         } catch (IOException e) {
             // 请求失败也记录
             writeToFile(request, requestBodyStr, curl, null, -1, e.toString(), 0);
+            LogRecorder.INSTANCE.record(
+                request.url().toString(), request.method(), -1,
+                0, requestBodyStr, "", curl, e.toString());
             throw e;
         }
         long durationMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startMs);
@@ -80,6 +84,9 @@ public class FileLoggingInterceptor implements Interceptor {
         }
 
         writeToFile(request, requestBodyStr, curl, response, response.code(), responseBodyStr, durationMs);
+        LogRecorder.INSTANCE.record(
+            request.url().toString(), request.method(), response.code(),
+            durationMs, requestBodyStr, responseBodyStr, curl, null);
 
         return response;
     }

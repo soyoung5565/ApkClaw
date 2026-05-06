@@ -132,6 +132,11 @@
     <string name="log_viewer_clear">清空日志</string>
     <string name="log_viewer_cleared">日志已清空</string>
     <string name="log_viewer_share_chooser">分享日志…</string>
+    <string name="log_recorder_start">开始录制</string>
+    <string name="log_recorder_stop">停止录制</string>
+    <string name="log_recorder_recording">正在录制 HTTP 日志…</string>
+    <string name="log_recorder_started">录制已开始 — 所有 HTTP 请求将被捕获</string>
+    <string name="log_recorder_stopped">录制已停止 — 日志已保存</string>
 
     <!-- 设置菜单项 -->
     <string name="menu_dingtalk">钉钉</string>

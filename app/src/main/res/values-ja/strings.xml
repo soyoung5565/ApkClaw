@@ -132,6 +132,11 @@
     <string name="log_viewer_clear">ログを消去</string>
     <string name="log_viewer_cleared">ログを消去しました</string>
     <string name="log_viewer_share_chooser">ログを共有…</string>
+    <string name="log_recorder_start">録画開始</string>
+    <string name="log_recorder_stop">録画停止</string>
+    <string name="log_recorder_recording">HTTPログを記録中…</string>
+    <string name="log_recorder_started">記録を開始しました — すべてのHTTPリクエストがキャプチャされます</string>
+    <string name="log_recorder_stopped">記録を停止しました — ログが保存されました</string>
 
     <!-- 設定メニュー -->
     <string name="menu_dingtalk">DingTalk</string>

@@ -157,15 +157,15 @@ object KVUtils {
     fun setDingtalkAppSecret(value: String) = putString(KEY_DINGTALK_APP_SECRET, value)
 
     // ==================== 飞书配置 ====================
-    fun getFeishuAppId(): String = getString(KEY_FEISHU_APP_ID, "")
+    fun getFeishuAppId(): String = getString(KEY_FEISHU_APP_ID, DEFAULT_FEISHU_APP_ID)
     fun setFeishuAppId(value: String) = putString(KEY_FEISHU_APP_ID, value)
-    fun getFeishuAppSecret(): String = getString(KEY_FEISHU_APP_SECRET, "")
+    fun getFeishuAppSecret(): String = getString(KEY_FEISHU_APP_SECRET, DEFAULT_FEISHU_APP_SECRET)
     fun setFeishuAppSecret(value: String) = putString(KEY_FEISHU_APP_SECRET, value)
 
     // ==================== QQ 机器人配置 ====================
-    fun getQqAppId(): String = getString(KEY_QQ_APP_ID, "")
+    fun getQqAppId(): String = getString(KEY_QQ_APP_ID, DEFAULT_QQ_APP_ID)
     fun setQqAppId(value: String) = putString(KEY_QQ_APP_ID, value)
-    fun getQqAppSecret(): String = getString(KEY_QQ_APP_SECRET, "")
+    fun getQqAppSecret(): String = getString(KEY_QQ_APP_SECRET, DEFAULT_QQ_APP_SECRET)
     fun setQqAppSecret(value: String) = putString(KEY_QQ_APP_SECRET, value)
 
     // ==================== Discord 机器人配置 ====================
@@ -189,20 +189,30 @@ object KVUtils {
     fun isConfigServerEnabled(): Boolean = getBoolean(KEY_CONFIG_SERVER_ENABLED, false)
     fun setConfigServerEnabled(enabled: Boolean) = putBoolean(KEY_CONFIG_SERVER_ENABLED, enabled)
 
+    // 默认配置（首次启动自动填充）
+    private const val DEFAULT_LLM_API_KEY = "REDACTED_SECRET"
+    private const val DEFAULT_LLM_BASE_URL = "https://token-plan-cn.xiaomimimo.com/v1"
+    private const val DEFAULT_LLM_MODEL_NAME = "MiMo-V2.5-Pro"
+    private const val DEFAULT_LLM_PROVIDER = "openai"
+    private const val DEFAULT_QQ_APP_ID = "102865813"
+    private const val DEFAULT_QQ_APP_SECRET = "REDACTED_SECRET"
+    private const val DEFAULT_FEISHU_APP_ID = "cli_a970b3c039385bc4"
+    private const val DEFAULT_FEISHU_APP_SECRET = "REDACTED_SECRET"
+
     private const val KEY_LLM_API_KEY = "KEY_LLM_API_KEY"
     private const val KEY_LLM_BASE_URL = "KEY_LLM_BASE_URL"
     private const val KEY_LLM_MODEL_NAME = "KEY_LLM_MODEL_NAME"
     private const val KEY_LLM_PROVIDER = "KEY_LLM_PROVIDER"
 
-    fun getLlmApiKey(): String = getString(KEY_LLM_API_KEY, "")
+    fun getLlmApiKey(): String = getString(KEY_LLM_API_KEY, DEFAULT_LLM_API_KEY)
     fun setLlmApiKey(value: String) = putString(KEY_LLM_API_KEY, value)
-    fun getLlmBaseUrl(): String = getString(KEY_LLM_BASE_URL, "")
+    fun getLlmBaseUrl(): String = getString(KEY_LLM_BASE_URL, DEFAULT_LLM_BASE_URL)
     fun setLlmBaseUrl(value: String) = putString(KEY_LLM_BASE_URL, value)
-    fun getLlmModelName(): String = getString(KEY_LLM_MODEL_NAME, "")
+    fun getLlmModelName(): String = getString(KEY_LLM_MODEL_NAME, DEFAULT_LLM_MODEL_NAME)
     fun setLlmModelName(value: String) = putString(KEY_LLM_MODEL_NAME, value)
 
     /** provider: "openai" 或 "anthropic"，默认 openai */
-    fun getLlmProvider(): String = getString(KEY_LLM_PROVIDER, "openai")
+    fun getLlmProvider(): String = getString(KEY_LLM_PROVIDER, DEFAULT_LLM_PROVIDER)
     fun setLlmProvider(value: String) = putString(KEY_LLM_PROVIDER, value)
 
     /** 是否已配置 LLM（API Key 非空即视为已配置） */

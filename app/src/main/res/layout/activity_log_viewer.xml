@@ -10,20 +10,68 @@
         android:layout_width="match_parent"
         android:layout_height="56pt" />
 
+    <!-- 录制状态栏 -->
+    <LinearLayout
+        android:id="@+id/recordingBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#1AFF0000"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="16pt"
+        android:paddingVertical="8pt"
+        android:visibility="gone">
+
+        <View
+            android:id="@+id/recordingDot"
+            android:layout_width="10pt"
+            android:layout_height="10pt"
+            android:background="@drawable/bg_red_dot" />
+
+        <TextView
+            android:id="@+id/tvRecordingStatus"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8pt"
+            android:text="Recording..."
+            android:textColor="#FF0000"
+            android:textSize="13pt"
+            android:textStyle="bold" />
+
+        <com.apk.claw.android.widget.KButton
+            android:id="@+id/btnStopRecording"
+            android:layout_width="wrap_content"
+            android:layout_height="36pt"
+            android:paddingHorizontal="16pt"
+            android:text="Stop"
+            android:textSize="13pt" />
+    </LinearLayout>
+
+    <!-- 操作按钮 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:paddingHorizontal="16pt"
         android:paddingTop="8pt"
-        android:paddingBottom="8pt">
+        android:paddingBottom="4pt">
+
+        <com.apk.claw.android.widget.KButton
+            android:id="@+id/btnStartRecording"
+            android:layout_width="0dp"
+            android:layout_height="40pt"
+            android:layout_weight="1"
+            android:layout_marginEnd="6pt"
+            android:text="@string/log_recorder_start"
+            android:textSize="13pt" />
 
         <com.apk.claw.android.widget.KButton
             android:id="@+id/btnShare"
             android:layout_width="0dp"
             android:layout_height="40pt"
             android:layout_weight="1"
-            android:layout_marginEnd="8pt"
+            android:layout_marginHorizontal="3pt"
             android:text="@string/log_viewer_share"
             android:textSize="13pt" />
 
@@ -32,6 +80,7 @@
             android:layout_width="0dp"
             android:layout_height="40pt"
             android:layout_weight="1"
+            android:layout_marginStart="6pt"
             android:text="@string/log_viewer_clear"
             android:textSize="13pt" />
     </LinearLayout>

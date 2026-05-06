@@ -132,6 +132,11 @@
     <string name="log_viewer_clear">Clear Logs</string>
     <string name="log_viewer_cleared">Logs cleared</string>
     <string name="log_viewer_share_chooser">Share logs via…</string>
+    <string name="log_recorder_start">Start Recording</string>
+    <string name="log_recorder_stop">Stop Recording</string>
+    <string name="log_recorder_recording">Recording HTTP logs…</string>
+    <string name="log_recorder_started">Recording started — all HTTP requests will be captured</string>
+    <string name="log_recorder_stopped">Recording stopped — log saved</string>
 
     <!-- Settings Menu -->
     <string name="menu_dingtalk">DingTalk</string>
