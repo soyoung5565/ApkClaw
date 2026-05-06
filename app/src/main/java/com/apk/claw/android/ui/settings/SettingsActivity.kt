@@ -128,6 +128,17 @@ class SettingsActivity : BaseActivity() {
             showDivider = false
         )
         menuItems[SettingsViewModel.MenuAction.LLM_CONFIG.name]?.setLeadingIconColor(getColor(R.color.colorTextPrimary))
+
+        // 工具
+        val toolsGroup = findViewById<MenuGroup>(R.id.toolsGroup)
+        toolsGroup.setTitle(getString(R.string.settings_group_tools))
+        menuItems[SettingsViewModel.MenuAction.LOG_VIEWER.name] = toolsGroup.addMenuItem(
+            leadingIcon = R.drawable.ic_storage,
+            title = getString(R.string.menu_log_viewer),
+            onClick = { viewModel.onMenuItemClick(SettingsViewModel.MenuAction.LOG_VIEWER) },
+            showDivider = false
+        )
+        menuItems[SettingsViewModel.MenuAction.LOG_VIEWER.name]?.setLeadingIconColor(getColor(R.color.colorTextPrimary))
     }
 
     private fun observeViewModel() {
@@ -230,6 +241,9 @@ class SettingsActivity : BaseActivity() {
                             }
                             SettingsViewModel.MenuAction.LLM_CONFIG -> {
                                 llmConfigLauncher.launch(Intent(this@SettingsActivity, LlmConfigActivity::class.java))
+                            }
+                            SettingsViewModel.MenuAction.LOG_VIEWER -> {
+                                startActivity(Intent(this@SettingsActivity, LogViewerActivity::class.java))
                             }
                             null -> {}
                             else -> {}

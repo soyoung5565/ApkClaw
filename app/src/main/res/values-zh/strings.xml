@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">ApkClaw</string>
+    <string name="app_name">MyClaw</string>
 
     <!-- 通用 -->
     <string name="common_confirm">确定</string>
@@ -19,7 +19,7 @@
     <string name="channel_wechat">微信</string>
     <string name="common_load_failed">加载失败: %s</string>
 
-    <string name="app_slogan">一款能做事的AI Agents</string>
+    <string name="app_slogan">你的私人 AI 助手</string>
 
     <!-- 引导页 -->
     <string name="guide_page_title">权限设置</string>
@@ -27,11 +27,11 @@
     <string name="guide_skip">跳过</string>
     <string name="guide_start">开始使用</string>
     <string name="guide_title_accessibility">无障碍服务</string>
-    <string name="guide_desc_accessibility">这是 AI 自动操控设备的核心权限。\n\n1. 前往系统设置 → 无障碍 → 已下载的应用\n2. 在列表中找到「ApkClaw」\n3. 开启开关\n4. 在系统弹窗中确认</string>
+    <string name="guide_desc_accessibility">这是 AI 自动操控设备的核心权限。\n\n1. 前往系统设置 → 无障碍 → 已下载的应用\n2. 在列表中找到「MyClaw」\n3. 开启开关\n4. 在系统弹窗中确认</string>
     <string name="guide_title_notification">常驻通知</string>
     <string name="guide_desc_notification">保持应用在后台运行，防止被系统杀死。\n\n在首页点击对应卡片即可开启。Android 13 及以上会先请求通知权限。</string>
     <string name="guide_title_overlay">悬浮窗</string>
-    <string name="guide_desc_overlay">显示 AI 执行状态的浮动面板。\n\n1. 前往系统设置 → 应用 → ApkClaw\n2. 找到「显示在其他应用上方」\n3. 开启开关</string>
+    <string name="guide_desc_overlay">显示 AI 执行状态的浮动面板。\n\n1. 前往系统设置 → 应用 → MyClaw\n2. 找到「显示在其他应用上方」\n3. 开启开关</string>
     <string name="guide_title_battery">电池白名单</string>
     <string name="guide_desc_battery">防止系统在后台关闭应用。\n\n在首页点击对应卡片，然后在系统弹窗中确认「允许」。(部分品牌手机需要修改为"无限制")</string>
     <string name="guide_title_storage">文件访问</string>
@@ -39,7 +39,7 @@
 
     <!-- 首页 -->
     <string name="home_need_notification_permission">需要通知权限才能显示常驻通知</string>
-    <string name="home_enable_accessibility">请开启 ApkClaw 无障碍服务</string>
+    <string name="home_enable_accessibility">请开启 MyClaw 无障碍服务</string>
     <string name="home_accessibility_enabled">已开启无障碍服务</string>
     <string name="home_notification_enabled">已开启常驻通知</string>
     <string name="home_overlay_enabled">已开启悬浮窗权限</string>
@@ -65,6 +65,7 @@
     <string name="settings_title">设置</string>
     <string name="settings_group_channel">通道</string>
     <string name="settings_group_model">模型</string>
+    <string name="settings_group_tools">工具</string>
 
     <!-- 解绑 -->
     <string name="unbind_title">解除绑定</string>
@@ -109,16 +110,28 @@
 
     <!-- LLM 配置 -->
     <string name="llm_config_title">LLM 配置</string>
-    <string name="llm_config_tip">请填写你的 LLM API Key、Base URL 和模型名称，数据仅保存在本地。</string>
+    <string name="llm_config_tip">配置你的 LLM 提供商、API Key、Base URL 和模型名称，数据仅保存在本地。</string>
     <string name="llm_config_api_key">API Key</string>
     <string name="llm_config_api_key_hint">如 sk-xxx（OpenAI）或其它服务商的 Key</string>
     <string name="llm_config_base_url">Base URL</string>
-    <string name="llm_config_base_url_hint">如 https://api.openai.com/v1（留空则使用 OpenAI 默认）</string>
+    <string name="llm_config_base_url_hint">如 https://api.openai.com/v1（留空则使用提供商默认）</string>
     <string name="llm_config_model_name">模型名称</string>
-    <string name="llm_config_model_name_hint">如 gpt-4o、gpt-4o-mini、claude-3-5-sonnet</string>
+    <string name="llm_config_model_name_hint">如 gpt-4o、claude-3-5-sonnet、deepseek-chat</string>
     <string name="llm_config_saved">LLM 配置已保存</string>
     <string name="llm_config_api_key_required">请填写 API Key</string>
+    <string name="llm_config_provider">提供商类型</string>
+    <string name="llm_config_provider_openai">OpenAI 兼容</string>
+    <string name="llm_config_provider_anthropic">Anthropic 兼容</string>
     <string name="menu_llm_config">LLM 配置</string>
+
+    <!-- 日志查看器 -->
+    <string name="menu_log_viewer">日志</string>
+    <string name="log_viewer_title">HTTP 日志</string>
+    <string name="log_viewer_empty">暂无日志</string>
+    <string name="log_viewer_share">分享全部日志</string>
+    <string name="log_viewer_clear">清空日志</string>
+    <string name="log_viewer_cleared">日志已清空</string>
+    <string name="log_viewer_share_chooser">分享日志…</string>
 
     <!-- 设置菜单项 -->
     <string name="menu_dingtalk">钉钉</string>
@@ -142,9 +155,9 @@
     <string name="floating_task_received">已收到：\"%s\"</string>
 
     <!-- 前台服务通知 -->
-    <string name="notification_channel_name">ApkClaw 运行状态</string>
-    <string name="notification_channel_description">显示 ApkClaw 运行状态及统计数据</string>
-    <string name="notification_content_title">ApkClaw 运行中</string>
+    <string name="notification_channel_name">MyClaw 运行状态</string>
+    <string name="notification_channel_description">显示 MyClaw 运行状态及统计数据</string>
+    <string name="notification_content_title">MyClaw 运行中</string>
     <string name="notification_content_text">AI Agent 服务正在运行</string>
 
     <!-- 通道消息（发给用户的回复） -->

@@ -26,6 +26,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "ApkClaw"
+rootProject.name = "MyClaw"
 include(":app")
  

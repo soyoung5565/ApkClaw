@@ -4,6 +4,7 @@ import android.os.PowerManager
 import androidx.lifecycle.ViewModel
 import com.apk.claw.android.ClawApplication.Companion.appViewModelInstance
 import com.apk.claw.android.agent.AgentConfig
+import com.apk.claw.android.agent.LlmProvider
 import com.apk.claw.android.channel.Channel
 import com.apk.claw.android.channel.ChannelManager
 import com.apk.claw.android.channel.ChannelSetup
@@ -53,10 +54,15 @@ class AppViewModel : ViewModel() {
     fun getAgentConfig(): AgentConfig {
         var baseUrl = KVUtils.getLlmBaseUrl().trim()
         if (baseUrl.isEmpty()) baseUrl = "https://api.openai.com/v1"
+        val provider = when (KVUtils.getLlmProvider()) {
+            "anthropic" -> LlmProvider.ANTHROPIC
+            else -> LlmProvider.OPENAI
+        }
         return AgentConfig.Builder()
             .apiKey(KVUtils.getLlmApiKey())
             .baseUrl(baseUrl)
             .modelName(KVUtils.getLlmModelName())
+            .provider(provider)
             .temperature(0.1)
             .maxIterations(60)
             .build()
@@ -87,7 +93,7 @@ class AppViewModel : ViewModel() {
             ?: return
         wakeLock = pm.newWakeLock(
             PowerManager.SCREEN_DIM_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
-            "ApkClaw::ScreenWakeLock"
+            "MyClaw::ScreenWakeLock"
         ).apply {
             acquire()
         }

@@ -192,6 +192,7 @@ object KVUtils {
     private const val KEY_LLM_API_KEY = "KEY_LLM_API_KEY"
     private const val KEY_LLM_BASE_URL = "KEY_LLM_BASE_URL"
     private const val KEY_LLM_MODEL_NAME = "KEY_LLM_MODEL_NAME"
+    private const val KEY_LLM_PROVIDER = "KEY_LLM_PROVIDER"
 
     fun getLlmApiKey(): String = getString(KEY_LLM_API_KEY, "")
     fun setLlmApiKey(value: String) = putString(KEY_LLM_API_KEY, value)
@@ -199,6 +200,10 @@ object KVUtils {
     fun setLlmBaseUrl(value: String) = putString(KEY_LLM_BASE_URL, value)
     fun getLlmModelName(): String = getString(KEY_LLM_MODEL_NAME, "")
     fun setLlmModelName(value: String) = putString(KEY_LLM_MODEL_NAME, value)
+
+    /** provider: "openai" 或 "anthropic"，默认 openai */
+    fun getLlmProvider(): String = getString(KEY_LLM_PROVIDER, "openai")
+    fun setLlmProvider(value: String) = putString(KEY_LLM_PROVIDER, value)
 
     /** 是否已配置 LLM（API Key 非空即视为已配置） */
     fun hasLlmConfig(): Boolean = getLlmApiKey().isNotEmpty()

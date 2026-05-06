@@ -122,7 +122,7 @@ class DingTalkChannelHandler(
                 val messageJson = com.google.gson.JsonObject().apply {
                     addProperty("msgtype", "markdown")
                     add("markdown", com.google.gson.JsonObject().apply {
-                        addProperty("title", "ApkClaw 回复")
+                        addProperty("title", "MyClaw 回复")
                         addProperty("text", content)
                     })
                 }

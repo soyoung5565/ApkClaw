@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginVertical="4pt"
+    app:cardBackgroundColor="@color/colorContainerBrighten"
+    app:cardCornerRadius="8pt"
+    app:cardElevation="1pt">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12pt">
+
+        <TextView
+            android:id="@+id/tvLogHeader"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/colorTextPrimary"
+            android:textSize="13pt"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvLogMeta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2pt"
+            android:textColor="@color/colorTextSecondary"
+            android:textSize="11pt" />
+
+        <TextView
+            android:id="@+id/tvLogContent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6pt"
+            android:background="#08000000"
+            android:fontFamily="monospace"
+            android:maxLines="20"
+            android:padding="8pt"
+            android:textColor="@color/colorTextPrimary"
+            android:textIsSelectable="true"
+            android:textSize="11pt" />
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>

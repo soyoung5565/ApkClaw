@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">ApkClaw</string>
+    <string name="app_name">MyClaw</string>
 
     <!-- Common -->
     <string name="common_confirm">OK</string>
@@ -19,7 +19,7 @@
     <string name="channel_wechat">WeChat</string>
     <string name="common_load_failed">Failed to load: %s</string>
 
-    <string name="app_slogan">AI Agents that get things done</string>
+    <string name="app_slogan">Your personal AI agent</string>
 
     <!-- Guide -->
     <string name="guide_page_title">Permission Setup</string>
@@ -27,11 +27,11 @@
     <string name="guide_skip">Skip</string>
     <string name="guide_start">Get Started</string>
     <string name="guide_title_accessibility">Accessibility Service</string>
-    <string name="guide_desc_accessibility">This is the core permission for AI to control your device.\n\n1. Go to Settings → Accessibility → Downloaded apps\n2. Find \"ApkClaw\" in the list\n3. Turn on the switch\n4. Confirm in the system dialog</string>
+    <string name="guide_desc_accessibility">This is the core permission for AI to control your device.\n\n1. Go to Settings → Accessibility → Downloaded apps\n2. Find \"MyClaw\" in the list\n3. Turn on the switch\n4. Confirm in the system dialog</string>
     <string name="guide_title_notification">Persistent Notification</string>
     <string name="guide_desc_notification">Keeps the app running in the background to prevent it from being killed by the system.\n\nJust tap the card on the home screen to enable it. Android 13+ will ask for notification permission first.</string>
     <string name="guide_title_overlay">System Overlay</string>
-    <string name="guide_desc_overlay">Displays a floating panel showing AI execution status.\n\n1. Go to Settings → Apps → ApkClaw\n2. Find \"Display over other apps\"\n3. Turn on the switch</string>
+    <string name="guide_desc_overlay">Displays a floating panel showing AI execution status.\n\n1. Go to Settings → Apps → MyClaw\n2. Find \"Display over other apps\"\n3. Turn on the switch</string>
     <string name="guide_title_battery">Battery Whitelist</string>
     <string name="guide_desc_battery">Prevents the system from stopping the app in the background.\n\nTap the card on the home screen, then confirm \"Allow\" in the system dialog. (Some devices may require setting to \"Unrestricted\")</string>
     <string name="guide_title_storage">File Access</string>
@@ -39,7 +39,7 @@
 
     <!-- Home -->
     <string name="home_need_notification_permission">Notification permission is required</string>
-    <string name="home_enable_accessibility">Please enable ApkClaw Accessibility Service</string>
+    <string name="home_enable_accessibility">Please enable MyClaw Accessibility Service</string>
     <string name="home_accessibility_enabled">Accessibility service enabled</string>
     <string name="home_notification_enabled">Persistent notification enabled</string>
     <string name="home_overlay_enabled">Overlay permission enabled</string>
@@ -65,6 +65,7 @@
     <string name="settings_title">Settings</string>
     <string name="settings_group_channel">Channels</string>
     <string name="settings_group_model">Model</string>
+    <string name="settings_group_tools">Tools</string>
 
     <!-- Unbind -->
     <string name="unbind_title">Disconnect</string>
@@ -109,16 +110,28 @@
 
     <!-- LLM Config -->
     <string name="llm_config_title">LLM Configuration</string>
-    <string name="llm_config_tip">Enter your LLM API key, base URL and model name. Data is stored locally only.</string>
+    <string name="llm_config_tip">Configure your LLM provider, API key, base URL and model name. Data is stored locally only.</string>
     <string name="llm_config_api_key">API Key</string>
     <string name="llm_config_api_key_hint">e.g. sk-xxx (OpenAI) or your provider key</string>
     <string name="llm_config_base_url">Base URL</string>
-    <string name="llm_config_base_url_hint">e.g. https://api.openai.com/v1 (leave empty for OpenAI default)</string>
+    <string name="llm_config_base_url_hint">e.g. https://api.openai.com/v1 (leave empty for provider default)</string>
     <string name="llm_config_model_name">Model Name</string>
-    <string name="llm_config_model_name_hint">e.g. gpt-4o, gpt-4o-mini, claude-3-5-sonnet</string>
+    <string name="llm_config_model_name_hint">e.g. gpt-4o, claude-3-5-sonnet, deepseek-chat</string>
     <string name="llm_config_saved">LLM configuration saved</string>
     <string name="llm_config_api_key_required">Please enter API Key</string>
+    <string name="llm_config_provider">Provider Type</string>
+    <string name="llm_config_provider_openai">OpenAI Compatible</string>
+    <string name="llm_config_provider_anthropic">Anthropic Compatible</string>
     <string name="menu_llm_config">LLM Config</string>
+
+    <!-- Log Viewer -->
+    <string name="menu_log_viewer">Logs</string>
+    <string name="log_viewer_title">HTTP Logs</string>
+    <string name="log_viewer_empty">No logs yet</string>
+    <string name="log_viewer_share">Share All Logs</string>
+    <string name="log_viewer_clear">Clear Logs</string>
+    <string name="log_viewer_cleared">Logs cleared</string>
+    <string name="log_viewer_share_chooser">Share logs via…</string>
 
     <!-- Settings Menu -->
     <string name="menu_dingtalk">DingTalk</string>
@@ -142,9 +155,9 @@
     <string name="floating_task_received">Received: \"%s\"</string>
 
     <!-- Foreground Service Notification -->
-    <string name="notification_channel_name">ApkClaw Status</string>
-    <string name="notification_channel_description">Shows ApkClaw running status and stats</string>
-    <string name="notification_content_title">ApkClaw Running</string>
+    <string name="notification_channel_name">MyClaw Status</string>
+    <string name="notification_channel_description">Shows MyClaw running status and stats</string>
+    <string name="notification_content_title">MyClaw Running</string>
     <string name="notification_content_text">AI Agent service is active</string>
 
     <!-- Channel Messages -->

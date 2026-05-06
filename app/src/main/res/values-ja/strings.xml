@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">ApkClaw</string>
+    <string name="app_name">MyClaw</string>
 
     <!-- 共通 -->
     <string name="common_confirm">OK</string>
@@ -27,11 +27,11 @@
     <string name="guide_skip">スキップ</string>
     <string name="guide_start">はじめる</string>
     <string name="guide_title_accessibility">ユーザー補助サービス</string>
-    <string name="guide_desc_accessibility">AIがデバイスを操作するための基本権限です。\n\n1. 設定 → ユーザー補助 → ダウンロード済みアプリを開く\n2. リストから「ApkClaw」を見つける\n3. スイッチをオンにする\n4. システムダイアログで確認する</string>
+    <string name="guide_desc_accessibility">AIがデバイスを操作するための基本権限です。\n\n1. 設定 → ユーザー補助 → ダウンロード済みアプリを開く\n2. リストから「MyClaw」を見つける\n3. スイッチをオンにする\n4. システムダイアログで確認する</string>
     <string name="guide_title_notification">常駐通知</string>
     <string name="guide_desc_notification">アプリをバックグラウンドで実行し続け、システムによる強制終了を防ぎます。\n\nホーム画面のカードをタップして有効にしてください。Android 13以降は通知権限が先に求められます。</string>
     <string name="guide_title_overlay">システムオーバーレイ</string>
-    <string name="guide_desc_overlay">AI実行状態を表示するフローティングパネルです。\n\n1. 設定 → アプリ → ApkClawを開く\n2.「他のアプリの上に重ねて表示」を見つける\n3. スイッチをオンにする</string>
+    <string name="guide_desc_overlay">AI実行状態を表示するフローティングパネルです。\n\n1. 設定 → アプリ → MyClawを開く\n2.「他のアプリの上に重ねて表示」を見つける\n3. スイッチをオンにする</string>
     <string name="guide_title_battery">バッテリーホワイトリスト</string>
     <string name="guide_desc_battery">システムがバックグラウンドでアプリを停止するのを防ぎます。\n\nホーム画面のカードをタップし、システムダイアログで「許可」を確認してください。(一部の端末では「制限なし」に変更が必要です)</string>
     <string name="guide_title_storage">ファイルアクセス</string>
@@ -39,7 +39,7 @@
 
     <!-- ホーム -->
     <string name="home_need_notification_permission">通知権限が必要です</string>
-    <string name="home_enable_accessibility">ApkClawユーザー補助サービスを有効にしてください</string>
+    <string name="home_enable_accessibility">MyClawユーザー補助サービスを有効にしてください</string>
     <string name="home_accessibility_enabled">ユーザー補助サービスが有効です</string>
     <string name="home_notification_enabled">常駐通知が有効です</string>
     <string name="home_overlay_enabled">オーバーレイ権限が有効です</string>
@@ -118,7 +118,20 @@
     <string name="llm_config_model_name_hint">例: gpt-4o、gpt-4o-mini、claude-3-5-sonnet</string>
     <string name="llm_config_saved">LLM設定を保存しました</string>
     <string name="llm_config_api_key_required">API Keyを入力してください</string>
+    <string name="llm_config_provider">プロバイダタイプ</string>
+    <string name="llm_config_provider_openai">OpenAI 互換</string>
+    <string name="llm_config_provider_anthropic">Anthropic 互換</string>
     <string name="menu_llm_config">LLM設定</string>
+    <string name="settings_group_tools">ツール</string>
+
+    <!-- ログビューア -->
+    <string name="menu_log_viewer">ログ</string>
+    <string name="log_viewer_title">HTTPログ</string>
+    <string name="log_viewer_empty">ログなし</string>
+    <string name="log_viewer_share">すべてのログを共有</string>
+    <string name="log_viewer_clear">ログを消去</string>
+    <string name="log_viewer_cleared">ログを消去しました</string>
+    <string name="log_viewer_share_chooser">ログを共有…</string>
 
     <!-- 設定メニュー -->
     <string name="menu_dingtalk">DingTalk</string>
@@ -142,9 +155,9 @@
     <string name="floating_task_received">受信：\"%s\"</string>
 
     <!-- フォアグラウンドサービス通知 -->
-    <string name="notification_channel_name">ApkClaw ステータス</string>
-    <string name="notification_channel_description">ApkClawの実行状態と統計を表示</string>
-    <string name="notification_content_title">ApkClaw 実行中</string>
+    <string name="notification_channel_name">MyClaw ステータス</string>
+    <string name="notification_channel_description">MyClawの実行状態と統計を表示</string>
+    <string name="notification_content_title">MyClaw 実行中</string>
     <string name="notification_content_text">AI Agentサービスが稼働中</string>
 
     <!-- チャネルメッセージ -->
