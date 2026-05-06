@@ -6,6 +6,7 @@ import com.apk.claw.android.utils.XLog
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import okhttp3.OkHttpClient
+import com.apk.claw.android.agent.langchain.http.GlobalLogInterceptor
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.WebSocket
@@ -34,7 +35,7 @@ class DiscordGatewayClient private constructor() {
         }
     }
 
-    private val httpClient = OkHttpClient.Builder()
+    private val httpClient = OkHttpClient.Builder().addInterceptor(GlobalLogInterceptor())
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(60, TimeUnit.SECONDS)
         .writeTimeout(10, TimeUnit.SECONDS)

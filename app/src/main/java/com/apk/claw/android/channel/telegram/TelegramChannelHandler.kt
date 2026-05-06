@@ -10,6 +10,7 @@ import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
+import com.apk.claw.android.agent.langchain.http.GlobalLogInterceptor
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
@@ -29,7 +30,7 @@ class TelegramChannelHandler(
     private var pollingThread: Thread? = null
 
     private val pollingHttpClient: OkHttpClient by lazy {
-        OkHttpClient.Builder()
+        OkHttpClient.Builder().addInterceptor(GlobalLogInterceptor())
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(40, TimeUnit.SECONDS)
             .writeTimeout(15, TimeUnit.SECONDS)

@@ -5,6 +5,7 @@ import com.apk.claw.android.channel.discord.DiscordChannelHandler
 import com.apk.claw.android.channel.feishu.FeiShuChannelHandler
 import com.apk.claw.android.channel.qqbot.QQChannelHandler
 import com.apk.claw.android.channel.telegram.TelegramChannelHandler
+import com.apk.claw.android.agent.langchain.http.GlobalLogInterceptor
 import com.apk.claw.android.channel.wechat.WeChatChannelHandler
 import com.apk.claw.android.utils.XLog
 import kotlinx.coroutines.CoroutineScope
@@ -26,7 +27,7 @@ object ChannelManager {
     private const val TAG = "ChannelManager"
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val httpClient = OkHttpClient()
+    private val httpClient = OkHttpClient.Builder().addInterceptor(GlobalLogInterceptor()).build()
 
     private val handlers = mutableMapOf<Channel, ChannelHandler>()
     private var messageListener: OnMessageReceivedListener? = null
