@@ -192,7 +192,7 @@ object KVUtils {
     // 默认配置（首次启动自动填充）
     private const val DEFAULT_LLM_API_KEY = "REDACTED_SECRET"
     private const val DEFAULT_LLM_BASE_URL = "https://token-plan-cn.xiaomimimo.com/v1"
-    private const val DEFAULT_LLM_MODEL_NAME = "MiMo-V2.5-Pro"
+    private const val DEFAULT_LLM_MODEL_NAME = "mimo-v2.5-pro"
     private const val DEFAULT_LLM_PROVIDER = "openai"
     private const val DEFAULT_QQ_APP_ID = "102865813"
     private const val DEFAULT_QQ_APP_SECRET = "REDACTED_SECRET"
