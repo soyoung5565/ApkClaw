@@ -98,6 +98,7 @@ dependencies {
 
 
     implementation(libs.oapi.sdk)
+    implementation("org.slf4j:slf4j-android:1.7.36")  // 添加 SLF4J Android 日志
     implementation(libs.dingtalk)
 
 

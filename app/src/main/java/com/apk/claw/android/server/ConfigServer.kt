@@ -46,6 +46,10 @@ class ConfigServer(
                 uri == "/api/channels" && method == Method.POST -> handlePostChannels(session)
                 uri == "/api/llm" && method == Method.GET -> handleGetLlm()
                 uri == "/api/llm" && method == Method.POST -> handlePostLlm(session)
+                // Agent runtime config (added by Hermes): GET reads, POST writes.
+                // Body: {"maxIterations": 500}
+                uri == "/api/agent/max-iterations" && method == Method.GET -> handleGetMaxIterations()
+                uri == "/api/agent/max-iterations" && method == Method.POST -> handlePostMaxIterations(session)
                 uri == "/debug.html" && method == Method.GET && BuildConfig.DEBUG -> serveDebugHtml()
                 uri == "/api/debug/tools" && method == Method.GET && BuildConfig.DEBUG -> handleGetTools()
                 uri == "/api/debug/execute" && method == Method.POST && BuildConfig.DEBUG -> handleExecuteTool(session)
@@ -279,6 +283,49 @@ class ConfigServer(
         val result = JsonObject().apply {
             addProperty("code", 0)
             add("data", data)
+        }
+        return corsResponse(newFixedLengthResponse(Response.Status.OK, MIME_JSON, result.toString()))
+    }
+
+    // ==================== Agent maxIterations (Hermes) ====================
+    private fun handleGetMaxIterations(): Response {
+        val value = com.apk.claw.android.utils.KVUtils.getMaxIterations()
+        val result = JsonObject().apply {
+            addProperty("code", 0)
+            addProperty("maxIterations", value)
+            addProperty("min", 20)
+            addProperty("max", 9999)
+        }
+        return corsResponse(newFixedLengthResponse(Response.Status.OK, MIME_JSON, result.toString()))
+    }
+
+    private fun handlePostMaxIterations(session: IHTTPSession): Response {
+        val files = mutableMapOf<String, String>()
+        try { session.parseBody(files) } catch (_: Exception) {}
+        val body = files["postData"] ?: ""
+        val json = try { gson.fromJson(body, JsonObject::class.java) } catch (_: Exception) { null }
+            ?: return corsResponse(
+                newFixedLengthResponse(
+                    Response.Status.BAD_REQUEST, MIME_JSON,
+                    """{"code":-1,"message":"invalid json"}"""
+                )
+            )
+        val raw = json.get("maxIterations")?.asInt
+            ?: return corsResponse(
+                newFixedLengthResponse(
+                    Response.Status.BAD_REQUEST, MIME_JSON,
+                    """{"code":-1,"message":"missing maxIterations"}"""
+                )
+            )
+        val newValue = raw.coerceIn(20, 9999)
+        com.apk.claw.android.utils.KVUtils.setMaxIterations(newValue)
+        XLog.i(TAG, "maxIterations updated to $newValue (requested $raw)")
+        // If the agent is mid-task, the new value is picked up on the next
+        // task (AgentConfig is re-read at task start).
+        val result = JsonObject().apply {
+            addProperty("code", 0)
+            addProperty("maxIterations", newValue)
+            addProperty("message", "will apply to next task (current task keeps old limit)")
         }
         return corsResponse(newFixedLengthResponse(Response.Status.OK, MIME_JSON, result.toString()))
     }

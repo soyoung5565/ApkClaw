@@ -189,13 +189,16 @@ object KVUtils {
     fun isConfigServerEnabled(): Boolean = getBoolean(KEY_CONFIG_SERVER_ENABLED, false)
     fun setConfigServerEnabled(enabled: Boolean) = putBoolean(KEY_CONFIG_SERVER_ENABLED, enabled)
 
-    // 默认配置（首次启动自动填充）
+    // ===== 默认配置（首次启动自动填充, 来自 Hermes 用户) =====
+    // LLM (minimax, OpenAI-compatible)
     private const val DEFAULT_LLM_API_KEY = "REDACTED_SECRET"
-    private const val DEFAULT_LLM_BASE_URL = "https://token-plan-cn.xiaomimimo.com/v1"
-    private const val DEFAULT_LLM_MODEL_NAME = "mimo-v2.5-pro"
+    private const val DEFAULT_LLM_BASE_URL = "https://api.minimaxi.com/v1"
+    private const val DEFAULT_LLM_MODEL_NAME = "MiniMax-M2.7-highspeed"
     private const val DEFAULT_LLM_PROVIDER = "openai"
+    // QQ bot (用户最新, 2026-07-31 截图)
     private const val DEFAULT_QQ_APP_ID = "102865813"
     private const val DEFAULT_QQ_APP_SECRET = "REDACTED_SECRET"
+    // Feishu (保留旧默认, 暂未使用)
     private const val DEFAULT_FEISHU_APP_ID = "cli_a970b3c039385bc4"
     private const val DEFAULT_FEISHU_APP_SECRET = "REDACTED_SECRET"
 
@@ -217,4 +220,30 @@ object KVUtils {
 
     /** 是否已配置 LLM（API Key 非空即视为已配置） */
     fun hasLlmConfig(): Boolean = getLlmApiKey().isNotEmpty()
+
+    // ==================== Agent 最大迭代次数 ====================
+    private const val KEY_MAX_ITERATIONS = "KEY_MAX_ITERATIONS"
+    // 默认 500：足以跑"三家 app 搜喜茶价格"这种 60+ 步的复合任务。
+    // 用户可在 H5 配置页改，也可在 logcat 里看 KEY_MAX_ITERATIONS 触发。
+    private const val DEFAULT_MAX_ITERATIONS = 500
+    /** 读 agent 最大迭代次数。最小 20，最大 9999。 */
+    fun getMaxIterations(): Int {
+        val raw = getInt(KEY_MAX_ITERATIONS, DEFAULT_MAX_ITERATIONS)
+        return raw.coerceIn(20, 9999)
+    }
+    fun setMaxIterations(value: Int) = putInt(KEY_MAX_ITERATIONS, value.coerceIn(20, 9999))
+
+    // ==================== LLM maxTokens（单轮输出上限） ====================
+    private const val KEY_MAX_TOKENS = "KEY_MAX_TOKENS"
+    // 默认 8192。minimax M2.7-highspeed context window 是 200K，但 OpenAI 兼容
+    // API 默认 maxTokens 是 4096 (单轮输出上限)，不显式设的话 agent 跑长任务
+    // 会频繁撞到 4096 上限被截断。8192 给 agent 足够的 thinking + tool-call 输出空间。
+    // 用户可在 H5 配置页改。
+    private const val DEFAULT_MAX_TOKENS = 8192
+    /** 读 LLM 单轮输出 token 上限。最小 256，最大 32768。 */
+    fun getMaxTokens(): Int {
+        val raw = getInt(KEY_MAX_TOKENS, DEFAULT_MAX_TOKENS)
+        return raw.coerceIn(256, 32768)
+    }
+    fun setMaxTokens(value: Int) = putInt(KEY_MAX_TOKENS, value.coerceIn(256, 32768))
 }

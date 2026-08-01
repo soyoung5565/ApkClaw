@@ -64,7 +64,8 @@ class AppViewModel : ViewModel() {
             .modelName(KVUtils.getLlmModelName())
             .provider(provider)
             .temperature(0.1)
-            .maxIterations(60)
+            .maxIterations(KVUtils.getMaxIterations())
+            .maxTokens(KVUtils.getMaxTokens())
             .build()
     }
 

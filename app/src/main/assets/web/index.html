@@ -166,6 +166,21 @@ input:focus {
       <p style="font-size:12px;color:#86868b;margin-top:8px;" data-i18n="llm_tip"></p>
     </div>
 
+    <div class="card agent">
+      <div class="card-title"><span class="dot"></span><span data-i18n="agent_title"></span></div>
+      <div class="field">
+        <label data-i18n="agent_max_iterations"></label>
+        <div class="input-wrap">
+          <input type="number" id="agentMaxIterations" min="20" max="9999" step="1" autocomplete="off">
+        </div>
+        <p style="font-size:12px;color:#86868b;margin-top:4px;" data-i18n="agent_max_iterations_tip"></p>
+      </div>
+      <div class="row">
+        <button class="primary" id="agentSave" data-i18n="save"></button>
+        <span class="status" id="agentStatus"></span>
+      </div>
+    </div>
+
     <div class="card dingtalk">
       <div class="card-title"><span class="dot"></span><span data-i18n="dingtalk"></span></div>
       <div class="field">
@@ -275,6 +290,13 @@ const i18nMessages = {
     save_success: '配置已保存，通道将自动重连',
     save_failed: '保存失败',
     unknown_error: '未知错误',
+    agent_title: 'Agent 运行参数',
+    agent_max_iterations: '最大迭代次数',
+    agent_max_iterations_tip: '任务最多执行的 LLM 轮数。简单任务 60 够,三家比价建议 500+,需要时再调大。',
+    agent_load_failed: '加载失败',
+    agent_save_success: '已保存,下次任务生效',
+    agent_save_failed: '保存失败',
+    invalid_max_iterations: '请输入 20-9999 之间的整数',
   },
   'en': {
     title: 'ApkClaw Config',
@@ -307,6 +329,13 @@ const i18nMessages = {
     save_success: 'Saved. Channels will reconnect automatically.',
     save_failed: 'Save failed',
     unknown_error: 'Unknown error',
+    agent_title: 'Agent Run Parameters',
+    agent_max_iterations: 'Max iterations',
+    agent_max_iterations_tip: 'Maximum LLM rounds per task. 60 is enough for simple tasks, 500+ recommended for 3-app comparisons.',
+    agent_load_failed: 'Failed to load',
+    agent_save_success: 'Saved. Takes effect on next task.',
+    agent_save_failed: 'Save failed',
+    invalid_max_iterations: 'Please enter an integer between 20 and 9999',
   },
   'ja': {
     title: 'ApkClaw 設定',
@@ -339,6 +368,13 @@ const i18nMessages = {
     save_success: '設定を保存しました。チャネルは自動的に再接続されます。',
     save_failed: '保存に失敗しました',
     unknown_error: '不明なエラー',
+    agent_title: 'Agent 実行パラメータ',
+    agent_max_iterations: '最大反復回数',
+    agent_max_iterations_tip: 'タスクごとの最大 LLM ラウンド数。シンプルなタスクは 60 で十分、3 アプリ比較は 500+ 推奨。',
+    agent_load_failed: '読み込み失敗',
+    agent_save_success: '保存しました。次のタスクから有効。',
+    agent_save_failed: '保存失敗',
+    invalid_max_iterations: '20-9999 の整数を入力してください',
   },
 };
 
@@ -411,6 +447,53 @@ async function load() {
   } catch (e) {
     document.getElementById('loading').textContent = t('load_failed');
   }
+  // Load agent config (best-effort, doesn't break the rest of the page)
+  try {
+    const r = await fetch('/api/agent/max-iterations');
+    const j = await r.json();
+    if (j && j.code === 0 && j.maxIterations) {
+      document.getElementById('agentMaxIterations').value = j.maxIterations;
+    }
+  } catch (e) {
+    // silent: agent card is optional
+  }
+}
+
+async function saveAgent() {
+  const btn = document.getElementById('agentSave');
+  const status = document.getElementById('agentStatus');
+  const raw = document.getElementById('agentMaxIterations').value.trim();
+  const n = parseInt(raw, 10);
+  if (!Number.isFinite(n) || n < 20 || n > 9999) {
+    status.textContent = t('invalid_max_iterations');
+    status.className = 'status error';
+    return;
+  }
+  btn.disabled = true;
+  status.textContent = '';
+  status.className = 'status';
+  try {
+    const r = await fetch('/api/agent/max-iterations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ maxIterations: n })
+    });
+    const j = await r.json();
+    if (j && j.code === 0) {
+      status.textContent = t('agent_save_success');
+      status.className = 'status success';
+    } else {
+      status.textContent = (t('agent_save_failed') || 'Failed') + ': ' + (j && j.message || t('unknown_error'));
+      status.className = 'status error';
+    }
+  } catch (e) {
+    status.textContent = t('agent_save_failed') + ': ' + e.message;
+    status.className = 'status error';
+  } finally {
+    btn.disabled = false;
+  }
+
+document.getElementById('agentSave').addEventListener('click', saveAgent);
 }
 
 async function save() {

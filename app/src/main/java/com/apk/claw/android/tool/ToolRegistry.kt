@@ -27,6 +27,7 @@ object ToolRegistry {
 
     private fun registerCommonTools() {
         register(GetScreenInfoTool())
+        register(DumpFullUiTool())  // Hermes 2026-07-31: uiautomator fallback for WebView pages
         register(FindNodeInfoTool())
         register(InputTextTool())
         register(SystemKeyTool())

@@ -28,6 +28,7 @@ class OpenAiLlmClient(
             .apiKey(config.apiKey)
             .modelName(config.modelName)
             .temperature(config.temperature)
+            .maxTokens(config.maxTokens)
         if (config.baseUrl.isNotEmpty()) {
             builder.baseUrl(config.baseUrl)
         }
@@ -40,6 +41,7 @@ class OpenAiLlmClient(
             .apiKey(config.apiKey)
             .modelName(config.modelName)
             .temperature(config.temperature)
+            .maxTokens(config.maxTokens)
         if (config.baseUrl.isNotEmpty()) {
             builder.baseUrl(config.baseUrl)
         }

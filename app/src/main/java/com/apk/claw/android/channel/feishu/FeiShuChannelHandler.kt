@@ -98,10 +98,60 @@ class FeiShuChannelHandler(
         scope.launch {
             try {
                 XLog.i(TAG, "飞书 WebSocket 开始连接...")
+                XLog.i(TAG, "飞书 appId=${appId.take(8)}..., appSecret长度=${appSecret.length}")
+                // 先验证凭证 - HTTP 直接请求 tenant_access_token
+                try {
+                    XLog.i(TAG, "飞书凭证验证: 开始...")
+                    val body = org.json.JSONObject()
+                        .put("app_id", appId)
+                        .put("app_secret", appSecret)
+                    val url = java.net.URL("https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal")
+                    val conn = url.openConnection() as java.net.HttpURLConnection
+                    conn.requestMethod = "POST"
+                    conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                    conn.doOutput = true
+                    conn.outputStream.write(body.toString().toByteArray())
+                    val respCode = conn.responseCode
+                    val respBody = if (respCode == 200) conn.inputStream.bufferedReader().readText()
+                        else conn.errorStream?.bufferedReader()?.readText() ?: "no body"
+                    XLog.i(TAG, "飞书凭证验证: HTTP $respCode, body=$respBody")
+                    val json = org.json.JSONObject(respBody)
+                    if (json.optInt("code") == 0) {
+                        XLog.i(TAG, "飞书凭证验证成功！")
+                    } else {
+                        XLog.e(TAG, "飞书凭证验证失败: ${json.optString("msg")}")
+                    }
+                    conn.disconnect()
+                } catch (e: Exception) {
+                    XLog.e(TAG, "飞书凭证验证异常: ${e.javaClass.simpleName}: ${e.message}")
+                }
+                // 测试获取 WebSocket 端点
+                try {
+                    val epBody = org.json.JSONObject()
+                        .put("AppID", appId)
+                        .put("AppSecret", appSecret)
+                    val epUrl = java.net.URL("https://open.feishu.cn/callback/ws/endpoint")
+                    val epConn = epUrl.openConnection() as java.net.HttpURLConnection
+                    epConn.requestMethod = "POST"
+                    epConn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                    epConn.setRequestProperty("locale", "zh")
+                    epConn.doOutput = true
+                    epConn.outputStream.write(epBody.toString().toByteArray())
+                    val epCode = epConn.responseCode
+                    val epResp = if (epCode == 200) epConn.inputStream.bufferedReader().readText()
+                        else epConn.errorStream?.bufferedReader()?.readText() ?: "no body"
+                    XLog.i(TAG, "飞书 WebSocket 端点测试: HTTP $epCode, body=$epResp")
+                    epConn.disconnect()
+                } catch (e: Exception) {
+                    XLog.e(TAG, "飞书 WebSocket 端点测试异常: ${e.javaClass.simpleName}: ${e.message}")
+                }
+                val startTime = System.currentTimeMillis()
                 wsClient?.start()
-                XLog.i(TAG, "飞书 WebSocket 客户端已启动")
+                val elapsed = System.currentTimeMillis() - startTime
+                XLog.i(TAG, "飞书 WebSocket start() 返回, 耗时=${elapsed}ms")
             } catch (e: Exception) {
                 XLog.e(TAG, "飞书 WebSocket 客户端启动失败: ${e.javaClass.simpleName}: ${e.message}", e)
+                e.printStackTrace()
             }
         }
     }

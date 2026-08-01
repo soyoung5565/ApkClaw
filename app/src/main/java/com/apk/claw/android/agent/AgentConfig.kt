@@ -7,7 +7,8 @@ data class AgentConfig(
     val baseUrl: String,
     val modelName: String = "",
     val systemPrompt: String = DEFAULT_SYSTEM_PROMPT,
-    val maxIterations: Int = 60,
+    val maxIterations: Int = 500,
+    val maxTokens: Int = 8192,
     val temperature: Double = 0.1,
     val provider: LlmProvider = LlmProvider.OPENAI,
     val streaming: Boolean = false
@@ -84,6 +85,18 @@ data class AgentConfig(
   只有当任务目标已经**可以确认达成**时，才调用 finish(summary)。
   summary 要描述完成了什么，而不只是说"完成了"。
 
+规则 11：WebView 页面回退到 dump_full_ui。
+  get_screen_info 读的是 Android AccessibilityService 树，对 H5 / WebView 页面（淘宝闪购、京东秒购/秒送、美团外卖的搜索结果页等）会返回空 —— 你会看到"屏幕里没有内容"，但屏幕上明明有图标和文字。
+  当你判断当前页面是 WebView（特征：a11y 树只有一个外层 [WebView] / [FrameLayout] 节点，bounds 几乎占满屏幕，里面没有任何带 text 的子节点），立即改用 dump_full_ui 工具 —— 它通过 `uiautomator dump` 直接读 ViewServer，**能 dump WebView 内部结构**，返回完整 XML。
+  dump_full_ui 返回的坐标与 tap / swipe 同一坐标系，直接用即可。
+  默认用 get_screen_info（快、token 少）。**只在 a11y 树空、屏幕不是空白的场景下切到 dump_full_ui**。
+
+规则 12：长任务时主动 finish。
+  你的 context window 是 200K tokens（输入+输出合计），单轮 maxTokens 是 8192。**不要让对话无限增长**。
+  当连续 30+ 轮（轮数大致判断：如果已经吃了 4-5 次 dump_full_ui 返回的大 XML，或已经对同一 app 操作超过 20 步）：
+  立即用 finish(summary) 结束当前任务，summary 里清楚说明已完成什么 + 还需要什么。**不要硬撑到 maxIterations 上限才退出**。
+  重要原则：宁可拆成"小步快跑多次 finish"，也别一次性跑 100 轮。
+
 ## 安全约束
 - 绝不自动填写账户密码、支付密码、银行卡号等敏感凭证（WiFi 密码等用户明确要求输入的除外）
 - 绝不确认购买/支付操作
@@ -98,6 +111,7 @@ data class AgentConfig(
         private var modelName: String = ""
         private var systemPrompt: String = DEFAULT_SYSTEM_PROMPT
         private var maxIterations: Int = 20
+        private var maxTokens: Int = 8192
         private var temperature: Double = 0.1
         private var provider: LlmProvider = LlmProvider.OPENAI
         private var streaming: Boolean = false
@@ -107,13 +121,14 @@ data class AgentConfig(
         fun modelName(modelName: String) = apply { this.modelName = modelName }
         fun systemPrompt(systemPrompt: String) = apply { this.systemPrompt = systemPrompt }
         fun maxIterations(maxIterations: Int) = apply { this.maxIterations = maxIterations }
+        fun maxTokens(maxTokens: Int) = apply { this.maxTokens = maxTokens }
         fun temperature(temperature: Double) = apply { this.temperature = temperature }
         fun provider(provider: LlmProvider) = apply { this.provider = provider }
         fun streaming(streaming: Boolean) = apply { this.streaming = streaming }
 
         fun build(): AgentConfig {
             require(apiKey.isNotEmpty()) { "API key is required" }
-            return AgentConfig(apiKey, baseUrl, modelName, systemPrompt, maxIterations, temperature, provider, streaming)
+            return AgentConfig(apiKey, baseUrl, modelName, systemPrompt, maxIterations, maxTokens, temperature, provider, streaming)
         }
     }
 }
