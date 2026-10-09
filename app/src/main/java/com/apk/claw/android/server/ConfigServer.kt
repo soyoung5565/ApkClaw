@@ -50,6 +50,10 @@ class ConfigServer(
                 // Body: {"maxIterations": 500}
                 uri == "/api/agent/max-iterations" && method == Method.GET -> handleGetMaxIterations()
                 uri == "/api/agent/max-iterations" && method == Method.POST -> handlePostMaxIterations(session)
+                // Agent maxTokens (single-turn LLM output cap), added 2026-08-01 by Hermes.
+                // Body: {"maxTokens": 8192}
+                uri == "/api/agent/max-tokens" && method == Method.GET -> handleGetMaxTokens()
+                uri == "/api/agent/max-tokens" && method == Method.POST -> handlePostMaxTokens(session)
                 uri == "/debug.html" && method == Method.GET && BuildConfig.DEBUG -> serveDebugHtml()
                 uri == "/api/debug/tools" && method == Method.GET && BuildConfig.DEBUG -> handleGetTools()
                 uri == "/api/debug/execute" && method == Method.POST && BuildConfig.DEBUG -> handleExecuteTool(session)
@@ -326,6 +330,48 @@ class ConfigServer(
             addProperty("code", 0)
             addProperty("maxIterations", newValue)
             addProperty("message", "will apply to next task (current task keeps old limit)")
+        }
+        return corsResponse(newFixedLengthResponse(Response.Status.OK, MIME_JSON, result.toString()))
+    }
+
+    // ==================== Agent maxTokens (Hermes, 2026-08-01) ====================
+    private fun handleGetMaxTokens(): Response {
+        val value = com.apk.claw.android.utils.KVUtils.getMaxTokens()
+        val result = JsonObject().apply {
+            addProperty("code", 0)
+            addProperty("maxTokens", value)
+            addProperty("min", 256)
+            addProperty("max", 32768)
+        }
+        return corsResponse(newFixedLengthResponse(Response.Status.OK, MIME_JSON, result.toString()))
+    }
+
+    private fun handlePostMaxTokens(session: IHTTPSession): Response {
+        val files = mutableMapOf<String, String>()
+        try { session.parseBody(files) } catch (_: Exception) {}
+        val body = files["postData"] ?: ""
+        val json = try { gson.fromJson(body, JsonObject::class.java) } catch (_: Exception) { null }
+            ?: return corsResponse(
+                newFixedLengthResponse(
+                    Response.Status.BAD_REQUEST, MIME_JSON,
+                    """{"code":-1,"message":"invalid json"}"""
+                )
+            )
+        val raw = json.get("maxTokens")?.asInt
+            ?: return corsResponse(
+                newFixedLengthResponse(
+                    Response.Status.BAD_REQUEST, MIME_JSON,
+                    """{"code":-1,"message":"missing maxTokens"}"""
+                )
+            )
+        val newValue = raw.coerceIn(256, 32768)
+        com.apk.claw.android.utils.KVUtils.setMaxTokens(newValue)
+        XLog.i(TAG, "maxTokens updated to $newValue (requested $raw)")
+        // Applies on next task — same pattern as maxIterations.
+        val result = JsonObject().apply {
+            addProperty("code", 0)
+            addProperty("maxTokens", newValue)
+            addProperty("message", "will apply to next task (current task keeps old cap)")
         }
         return corsResponse(newFixedLengthResponse(Response.Status.OK, MIME_JSON, result.toString()))
     }

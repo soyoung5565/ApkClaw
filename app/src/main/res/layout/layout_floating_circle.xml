@@ -56,15 +56,15 @@
         app:cardElevation="4pt"
         app:cardBackgroundColor="@color/colorBrandPrimary">
 
-        <TextView
-            android:id="@+id/tvFloatTextIdle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+        <ImageView
+            android:id="@+id/ivIdleLogo"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
             android:layout_gravity="center"
-            android:text="@string/floating_ai_label"
-            android:textColor="@color/colorBrandOnPrimary"
-            android:textSize="16pt"
-            android:textStyle="bold" />
+            android:contentDescription="@string/floating_ai_label"
+            android:src="@drawable/ic_launcher"
+            android:scaleType="fitCenter"
+            android:padding="8pt" />
 
     </com.google.android.material.card.MaterialCardView>
 
