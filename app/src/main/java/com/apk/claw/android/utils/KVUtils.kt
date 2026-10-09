@@ -189,18 +189,18 @@ object KVUtils {
     fun isConfigServerEnabled(): Boolean = getBoolean(KEY_CONFIG_SERVER_ENABLED, false)
     fun setConfigServerEnabled(enabled: Boolean) = putBoolean(KEY_CONFIG_SERVER_ENABLED, enabled)
 
-    // ===== 默认配置（首次启动自动填充, 来自 Hermes 用户) =====
+    // ===== 默认配置（首次启动自动填充；密钥请勿硬编码提交，留空由用户在设置页填写） =====
     // LLM (minimax, OpenAI-compatible)
-    private const val DEFAULT_LLM_API_KEY = "REDACTED_SECRET"
+    private const val DEFAULT_LLM_API_KEY = ""
     private const val DEFAULT_LLM_BASE_URL = "https://api.minimaxi.com/v1"
     private const val DEFAULT_LLM_MODEL_NAME = "MiniMax-M2.7-highspeed"
     private const val DEFAULT_LLM_PROVIDER = "openai"
     // QQ bot (用户最新, 2026-07-31 截图)
     private const val DEFAULT_QQ_APP_ID = "102865813"
-    private const val DEFAULT_QQ_APP_SECRET = "REDACTED_SECRET"
+    private const val DEFAULT_QQ_APP_SECRET = ""
     // Feishu (保留旧默认, 暂未使用)
     private const val DEFAULT_FEISHU_APP_ID = "cli_a970b3c039385bc4"
-    private const val DEFAULT_FEISHU_APP_SECRET = "REDACTED_SECRET"
+    private const val DEFAULT_FEISHU_APP_SECRET = ""
 
     private const val KEY_LLM_API_KEY = "KEY_LLM_API_KEY"
     private const val KEY_LLM_BASE_URL = "KEY_LLM_BASE_URL"
