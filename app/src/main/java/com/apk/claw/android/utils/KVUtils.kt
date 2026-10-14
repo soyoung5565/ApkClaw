@@ -205,10 +205,10 @@ object KVUtils {
     private const val BACKUP_LLM_MODEL_NAME = "MiniMax-M3.1-Flash-Preview"
     // QQ bot (用户最新, 2026-07-31 截图)
     private const val DEFAULT_QQ_APP_ID = "102865813"
-    private const val DEFAULT_QQ_APP_SECRET = ""
+    private const val DEFAULT_QQ_APP_SECRET = "YOUR_QQ_APP_SECRET"
     // Feishu (保留旧默认, 暂未使用)
-    private const val DEFAULT_FEISHU_APP_ID = "cli_a970b3c039385bc4"
-    private const val DEFAULT_FEISHU_APP_SECRET = ""
+    private const val DEFAULT_FEISHU_APP_ID = ""   // 用户 2026-10-14：飞书停用
+    private const val DEFAULT_FEISHU_APP_SECRET = ""   // 用户 2026-10-14：飞书停用
 
     private const val KEY_LLM_API_KEY = "KEY_LLM_API_KEY"
     private const val KEY_LLM_BASE_URL = "KEY_LLM_BASE_URL"
