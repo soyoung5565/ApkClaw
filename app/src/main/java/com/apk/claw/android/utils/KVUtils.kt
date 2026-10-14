@@ -246,4 +246,41 @@ object KVUtils {
         return raw.coerceIn(256, 32768)
     }
     fun setMaxTokens(value: Int) = putInt(KEY_MAX_TOKENS, value.coerceIn(256, 32768))
+
+    // ==================== 思考深度 (Hermes, 2026-10-14) ====================
+    // 背景：长任务 agent 每轮都要推理，之前没有任何思考参数，模型思考内容也从不读回历史。
+    // 官方依据：
+    //   火山 DeepSeek-V4.1-Flash (Chat API) —— reasoning_effort 支持 none/low/high/max，
+    //     none 关闭思考；thinking.type=disabled 关闭思考，且此时不应同时发 reasoning_effort。
+    //   MiniMax-M3.1-Flash-Preview —— 强制开启 thinking，传 disabled 返回 400；
+    //     reasoning_effort 支持 low/medium/high/xhigh/max，省略时默认 max。
+    //   M2.x —— thinking 无法关闭，自适应深度。
+    private const val KEY_THINKING_ENABLED = "KEY_THINKING_ENABLED"
+    private const val KEY_REASONING_EFFORT = "KEY_REASONING_EFFORT"
+
+    /** 默认开启思考。 */
+    private const val DEFAULT_THINKING_ENABLED = true
+    /** 默认最大思考深度（用户 2026-10-14 明确要求：打开即 max）。 */
+    private const val DEFAULT_REASONING_EFFORT = "max"
+
+    /** 合法档位集合，两家模型的并集；实际下发时按模型族过滤。 */
+    val REASONING_EFFORT_VALUES = setOf("none", "minimal", "low", "medium", "high", "xhigh", "max")
+
+    fun isThinkingEnabled(): Boolean =
+        getBoolean(KEY_THINKING_ENABLED, DEFAULT_THINKING_ENABLED)
+
+    fun setThinkingEnabled(enabled: Boolean) =
+        putBoolean(KEY_THINKING_ENABLED, enabled)
+
+    /** 读思考档位；非法值回落到默认 max。 */
+    fun getReasoningEffort(): String {
+        val raw = getString(KEY_REASONING_EFFORT, DEFAULT_REASONING_EFFORT)
+            .trim().lowercase()
+        return if (raw in REASONING_EFFORT_VALUES) raw else DEFAULT_REASONING_EFFORT
+    }
+
+    fun setReasoningEffort(value: String) {
+        val normalized = value.trim().lowercase()
+        putString(KEY_REASONING_EFFORT, if (normalized in REASONING_EFFORT_VALUES) normalized else DEFAULT_REASONING_EFFORT)
+    }
 }

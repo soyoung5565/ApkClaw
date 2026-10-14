@@ -11,8 +11,12 @@ data class AgentConfig(
     val maxTokens: Int = 8192,
     val temperature: Double = 0.1,
     val provider: LlmProvider = LlmProvider.OPENAI,
-    val streaming: Boolean = false
-) {
+        val streaming: Boolean = false,
+        /** 是否开启深度思考（Hermes 2026-10-14）。 */
+        val thinkingEnabled: Boolean = true,
+        /** 思考档位，默认 max。实际下发按模型族过滤（见 ReasoningPolicy）。 */
+        val reasoningEffort: String = "max"
+    ) {
     companion object {
         const val DEFAULT_SYSTEM_PROMPT =
             """## ROLE
@@ -77,9 +81,14 @@ data class AgentConfig(
   - 尝试不同方式（换元素、换坐标、滑动寻找）
   - 同一步骤连续 3 次失败 → system_key(key="back") 回退一步，重新规划
 
-规则 9：保持在目标 App。
-  如果 get_screen_info 返回的界面内容明显不属于目标 App（如回到了桌面、跳到了其他应用），
-  先 system_key(key="back") 尝试返回。如果返回不了，使用 open_app 重新打开目标 App。
+规则 9：保持在目标 App（当前 App 身份以 [CURRENT_APP] 为唯一依据）。
+  get_screen_info 返回的开头有一行 [CURRENT_APP] package=... name=...，这是**唯一权威**的前台应用身份。
+  - 不要根据界面文案猜你在哪个 App。咸鱼、美团、淘宝闪购的界面高度相似，靠文案猜必然出错。
+  - [CURRENT_APP] 显示什么，你就在什么 App 里。任务要求"去美团"但 [CURRENT_APP] 是咸鱼，
+    说明你根本不在美团 —— 此时必须 open_app 切过去，而不是在当前界面继续操作。
+  - 如果 [CURRENT_APP] 显示 unknown 或已经是目标 App，但操作后界面没变化：
+    先 system_key(key="back") 尝试返回，返回不了就用 open_app 重新打开目标 App。
+  - 每次操作后重新读 [CURRENT_APP] 确认没有跳走。切 App 后一定要确认 [CURRENT_APP] 已经变成目标 App 再继续。
 
 规则 10：任务完成。
   只有当任务目标已经**可以确认达成**时，才调用 finish(summary)。
@@ -115,6 +124,8 @@ data class AgentConfig(
         private var temperature: Double = 0.1
         private var provider: LlmProvider = LlmProvider.OPENAI
         private var streaming: Boolean = false
+        private var thinkingEnabled: Boolean = true
+        private var reasoningEffort: String = "max"
 
         fun apiKey(apiKey: String) = apply { this.apiKey = apiKey }
         fun baseUrl(baseUrl: String) = apply { this.baseUrl = baseUrl }
@@ -126,9 +137,18 @@ data class AgentConfig(
         fun provider(provider: LlmProvider) = apply { this.provider = provider }
         fun streaming(streaming: Boolean) = apply { this.streaming = streaming }
 
+        /** 是否开启深度思考。 */
+        fun thinkingEnabled(thinkingEnabled: Boolean) = apply { this.thinkingEnabled = thinkingEnabled }
+
+        /** 思考档位（none/minimal/low/medium/high/xhigh/max），默认 max。 */
+        fun reasoningEffort(reasoningEffort: String) = apply { this.reasoningEffort = reasoningEffort }
+
         fun build(): AgentConfig {
             require(apiKey.isNotEmpty()) { "API key is required" }
-            return AgentConfig(apiKey, baseUrl, modelName, systemPrompt, maxIterations, maxTokens, temperature, provider, streaming)
+            return AgentConfig(
+                apiKey, baseUrl, modelName, systemPrompt, maxIterations, maxTokens,
+                temperature, provider, streaming, thinkingEnabled, reasoningEffort
+            )
         }
     }
 }

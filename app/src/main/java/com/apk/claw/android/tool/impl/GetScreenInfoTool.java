@@ -56,6 +56,40 @@ public class GetScreenInfoTool extends BaseTool {
         if (tree == null) {
             return ToolResult.error(SYSTEM_DIALOG_BLOCKED);
         }
-        return ToolResult.success(tree);
+        // Hermes 2026-10-14: 把前台应用身份注入观测结果。
+        // 背景：原先 dump 只给 className/text/bounds，模型无法区分同款电商 App
+        // （咸鱼 vs 美团 vs 淘宝界面文案高度相似），只能靠猜 —— 长任务跑到 20+ 步
+        // 就会出现"明明还在咸鱼界面却认成美团"的幻觉。给一个确定的事实即可消除。
+        return ToolResult.success(describeForegroundApp(service) + tree);
+    }
+
+    /**
+     * 读取当前前台窗口所属应用，输出成模型可直接采信的事实。
+     * 拿不到时明确告诉模型"未知"，而不是省略字段 —— 省略会让模型退回去猜。
+     */
+    private static String describeForegroundApp(ClawAccessibilityService service) {
+        String pkg = null;
+        try {
+            android.view.accessibility.AccessibilityNodeInfo root = service.getRootInActiveWindow();
+            if (root != null) {
+                CharSequence pkgName = root.getPackageName();
+                if (pkgName != null && pkgName.length() > 0) {
+                    pkg = pkgName.toString();
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        if (pkg == null || pkg.isEmpty() || pkg.equals(ClawApplication.Companion.getInstance().getPackageName())) {
+            return "[CURRENT_APP] unknown —— 拿不到前台应用包名，不要靠界面文案猜测你在哪个 App\n";
+        }
+        String label = pkg;
+        try {
+            android.content.pm.ApplicationInfo info =
+                    ClawApplication.Companion.getInstance().getPackageManager().getApplicationInfo(pkg, 0);
+            label = ClawApplication.Companion.getInstance().getPackageManager().getApplicationLabel(info).toString();
+        } catch (Throwable ignored) {
+        }
+        return "[CURRENT_APP] package=" + pkg + " name=" + label
+                + " —— 这是你现在所在 App 的唯一权威依据，界面文案相似时以它为准\n";
     }
 }

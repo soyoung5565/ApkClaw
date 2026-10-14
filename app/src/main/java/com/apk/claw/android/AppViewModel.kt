@@ -63,9 +63,13 @@ class AppViewModel : ViewModel() {
             .baseUrl(baseUrl)
             .modelName(KVUtils.getLlmModelName())
             .provider(provider)
-            .temperature(0.1)
+            // 0.1 过于贪心：一旦滑向错误先验（如把咸鱼认成美团）就非常顽固，
+            // 0.3 允许模型在观察结果与先验冲突时重新权衡（Hermes 2026-10-14）
+            .temperature(0.3)
             .maxIterations(KVUtils.getMaxIterations())
             .maxTokens(KVUtils.getMaxTokens())
+            .thinkingEnabled(KVUtils.isThinkingEnabled())
+            .reasoningEffort(KVUtils.getReasoningEffort())
             .build()
     }
 

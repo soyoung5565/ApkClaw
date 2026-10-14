@@ -54,6 +54,8 @@ class ConfigServer(
                 // Body: {"maxTokens": 8192}
                 uri == "/api/agent/max-tokens" && method == Method.GET -> handleGetMaxTokens()
                 uri == "/api/agent/max-tokens" && method == Method.POST -> handlePostMaxTokens(session)
+                uri == "/api/agent/thinking" && method == Method.GET -> handleGetThinking()
+                uri == "/api/agent/thinking" && method == Method.POST -> handlePostThinking(session)
                 uri == "/debug.html" && method == Method.GET && BuildConfig.DEBUG -> serveDebugHtml()
                 uri == "/api/debug/tools" && method == Method.GET && BuildConfig.DEBUG -> handleGetTools()
                 uri == "/api/debug/execute" && method == Method.POST && BuildConfig.DEBUG -> handleExecuteTool(session)
@@ -372,6 +374,63 @@ class ConfigServer(
             addProperty("code", 0)
             addProperty("maxTokens", newValue)
             addProperty("message", "will apply to next task (current task keeps old cap)")
+        }
+        return corsResponse(newFixedLengthResponse(Response.Status.OK, MIME_JSON, result.toString()))
+    }
+
+    // ==================== Agent 思考开关 + 档位 (Hermes, 2026-10-14) ====================
+    private fun handleGetThinking(): Response {
+        val result = JsonObject().apply {
+            addProperty("code", 0)
+            addProperty("thinkingEnabled", com.apk.claw.android.utils.KVUtils.isThinkingEnabled())
+            addProperty("reasoningEffort", com.apk.claw.android.utils.KVUtils.getReasoningEffort())
+            addProperty("model", com.apk.claw.android.utils.KVUtils.getLlmModelName())
+            addProperty("note", "MiniMax 强制思考，关不掉；火山 DeepSeek/Doubao 可关")
+        }
+        return corsResponse(newFixedLengthResponse(Response.Status.OK, MIME_JSON, result.toString()))
+    }
+
+    private fun handlePostThinking(session: IHTTPSession): Response {
+        val files = mutableMapOf<String, String>()
+        try { session.parseBody(files) } catch (_: Exception) {}
+        val body = files["postData"] ?: ""
+        val json = try { gson.fromJson(body, JsonObject::class.java) } catch (_: Exception) { null }
+            ?: return corsResponse(
+                newFixedLengthResponse(
+                    Response.Status.BAD_REQUEST, MIME_JSON,
+                    """{"code":-1,"message":"invalid json"}"""
+                )
+            )
+
+        // thinkingEnabled 可选
+        json.get("thinkingEnabled")?.takeIf { !it.isJsonNull }?.let {
+            val enabled = if (it.isJsonPrimitive && it.asJsonPrimitive.isBoolean) {
+                it.asBoolean
+            } else {
+                it.asString.trim().lowercase() == "true"
+            }
+            com.apk.claw.android.utils.KVUtils.setThinkingEnabled(enabled)
+            XLog.i(TAG, "thinkingEnabled updated to $enabled")
+        }
+
+        // reasoningEffort 可选，非法值由 KVUtils 回落到 max
+        json.get("reasoningEffort")?.takeIf { !it.isJsonNull }?.let {
+            val raw = it.asString.trim().lowercase()
+            val before = com.apk.claw.android.utils.KVUtils.getReasoningEffort()
+            com.apk.claw.android.utils.KVUtils.setReasoningEffort(raw)
+            val after = com.apk.claw.android.utils.KVUtils.getReasoningEffort()
+            if (raw != after) {
+                XLog.w(TAG, "reasoning_effort '$raw' invalid, fell back to $after")
+            } else {
+                XLog.i(TAG, "reasoningEffort updated to $after (was $before)")
+            }
+        }
+
+        val result = JsonObject().apply {
+            addProperty("code", 0)
+            addProperty("thinkingEnabled", com.apk.claw.android.utils.KVUtils.isThinkingEnabled())
+            addProperty("reasoningEffort", com.apk.claw.android.utils.KVUtils.getReasoningEffort())
+            addProperty("message", "will apply to next task (current task keeps old setting)")
         }
         return corsResponse(newFixedLengthResponse(Response.Status.OK, MIME_JSON, result.toString()))
     }
