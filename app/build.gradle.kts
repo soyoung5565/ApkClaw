@@ -24,12 +24,18 @@ android {
             val props = Properties().apply {
                 rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
             }
-            val ksFile = props.getProperty("KEYSTORE_FILE", "")
-            if (ksFile.isNotEmpty()) {
-                storeFile = file(ksFile)
-                storePassword = props.getProperty("KEYSTORE_PASSWORD", "")
-                keyAlias = props.getProperty("KEY_ALIAS", "")
-                keyPassword = props.getProperty("KEY_PASSWORD", "")
+            // 固定签名密钥（Hermes 2026-10-14）
+            // 背景：之前一直 assembleDebug，用的是 Android 临时 debug 密钥，
+            // 每次编译都可能变 → 系统判定为不同应用 → 每次更新都要重新授权全部权限。
+            // 改用项目内固定 keystore 后，安装即为覆盖更新，权限与数据全部保留。
+            val ksFile = props.getProperty("KEYSTORE_FILE", "myclaw-release.jks")
+            // file() 相对 app/ 模块解析，keystore 在项目根目录，需回退一级
+            val ksPath = rootProject.file(ksFile)
+            if (ksPath.exists()) {
+                storeFile = ksPath
+                storePassword = props.getProperty("KEYSTORE_PASSWORD", "myclaw2026")
+                keyAlias = props.getProperty("KEY_ALIAS", "myclaw")
+                keyPassword = props.getProperty("KEY_PASSWORD", "myclaw2026")
             }
         }
     }
@@ -38,8 +44,8 @@ android {
         applicationId = "com.apk.claw.android"
         minSdk = 28
         targetSdk = 36
-        versionCode = 2
-        versionName = "0.0.2"
+        versionCode = 3
+        versionName = "0.0.3"
         buildConfigField("String", "VERSION_INFO", getVersionGit())
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

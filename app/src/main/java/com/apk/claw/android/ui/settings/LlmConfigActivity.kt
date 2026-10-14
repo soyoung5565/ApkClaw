@@ -5,6 +5,7 @@ import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.Spinner
 import android.widget.Toast
+import androidx.appcompat.widget.SwitchCompat
 import com.apk.claw.android.ClawApplication
 import com.apk.claw.android.R
 import com.apk.claw.android.base.BaseActivity
@@ -30,6 +31,9 @@ class LlmConfigActivity : BaseActivity() {
         val etApiKey = findViewById<EditText>(R.id.etApiKey)
         val etBaseUrl = findViewById<EditText>(R.id.etBaseUrl)
         val etModelName = findViewById<EditText>(R.id.etModelName)
+        val swThinking = findViewById<SwitchCompat>(R.id.swThinking)
+        val spinnerEffort = findViewById<Spinner>(R.id.spinnerEffort)
+        val tvEffortLabel = findViewById<android.widget.TextView>(R.id.tvEffortLabel)
 
         // 设置 Provider 下拉
         val providerOptions = listOf(
@@ -40,6 +44,25 @@ class LlmConfigActivity : BaseActivity() {
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, providerOptions)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerProvider.adapter = adapter
+
+        // 深度思考开关 + 档位（Hermes 2026-10-14）
+        val efforts = listOf("max", "xhigh", "high", "medium", "low", "minimal", "none")
+        val effortAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, efforts)
+        effortAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerEffort.adapter = effortAdapter
+        spinnerEffort.setSelection(efforts.indexOf(KVUtils.getReasoningEffort()).coerceAtLeast(0))
+
+        swThinking.isChecked = KVUtils.isThinkingEnabled()
+        // 关闭思考时档位无意义，灰掉避免误解
+        fun refreshEffortEnabled() {
+            val on = swThinking.isChecked
+            spinnerEffort.isEnabled = on
+            tvEffortLabel.isEnabled = on
+            spinnerEffort.alpha = if (on) 1.0f else 0.4f
+            tvEffortLabel.alpha = if (on) 1.0f else 0.4f
+        }
+        swThinking.setOnCheckedChangeListener { _, _ -> refreshEffortEnabled() }
+        refreshEffortEnabled()
 
         // 恢复已保存的值
         val savedProvider = KVUtils.getLlmProvider()
@@ -65,6 +88,9 @@ class LlmConfigActivity : BaseActivity() {
             KVUtils.setLlmApiKey(apiKey)
             KVUtils.setLlmBaseUrl(baseUrl)
             KVUtils.setLlmModelName(modelName)
+            KVUtils.setThinkingEnabled(swThinking.isChecked)
+            val effort = efforts[spinnerEffort.selectedItemPosition]
+            KVUtils.setReasoningEffort(effort)
 
             ClawApplication.appViewModelInstance.updateAgentConfig()
             ClawApplication.appViewModelInstance.initAgent()

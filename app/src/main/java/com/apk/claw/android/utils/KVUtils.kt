@@ -189,12 +189,20 @@ object KVUtils {
     fun isConfigServerEnabled(): Boolean = getBoolean(KEY_CONFIG_SERVER_ENABLED, false)
     fun setConfigServerEnabled(enabled: Boolean) = putBoolean(KEY_CONFIG_SERVER_ENABLED, enabled)
 
-    // ===== 默认配置（首次启动自动填充；密钥请勿硬编码提交，留空由用户在设置页填写） =====
-    // LLM (minimax, OpenAI-compatible)
-    private const val DEFAULT_LLM_API_KEY = ""
-    private const val DEFAULT_LLM_BASE_URL = "https://api.minimaxi.com/v1"
-    private const val DEFAULT_LLM_MODEL_NAME = "MiniMax-M2.7-highspeed"
+    // ===== 默认配置（首次启动自动填充，用户 2026-10-14 明确要求开箱即用） =====
+    // LLM 主力：火山方舟 Agent Plan + DeepSeek-V4.1-Flash
+    //   Agent Plan 走 OpenAI 兼容端点，长任务不消耗 token 额度。
+    //   模型选择说明：该模型官方 Chat API 支持 reasoning_effort none/low/high/max，
+    //   能真正关思考、能开到 max，是当前 Agent 场景的最优解。
+    private const val DEFAULT_LLM_API_KEY = "YOUR_VOLCENGINE_API_KEY"
+    private const val DEFAULT_LLM_BASE_URL = "https://ark.cn-beijing.volces.com/api/plan/v3"
+    private const val DEFAULT_LLM_MODEL_NAME = "deepseek-v4.1-flash"
     private const val DEFAULT_LLM_PROVIDER = "openai"
+    // 备用 LLM：MiniMax 开放平台（用户 2026-10-14 常用）
+    //   注意：M3.1-Flash-Preview 强制开启思考，思考开关对它无效（传 disabled 返回 400）。
+    private const val BACKUP_LLM_API_KEY = "YOUR_MINIMAX_API_KEY"
+    private const val BACKUP_LLM_BASE_URL = "https://api.minimaxi.com/v1"
+    private const val BACKUP_LLM_MODEL_NAME = "MiniMax-M3.1-Flash-Preview"
     // QQ bot (用户最新, 2026-07-31 截图)
     private const val DEFAULT_QQ_APP_ID = "102865813"
     private const val DEFAULT_QQ_APP_SECRET = ""
@@ -220,6 +228,41 @@ object KVUtils {
 
     /** 是否已配置 LLM（API Key 非空即视为已配置） */
     fun hasLlmConfig(): Boolean = getLlmApiKey().isNotEmpty()
+
+    /**
+     * 首次启动预填默认配置（用户 2026-10-14 要求开箱即用）。
+     *
+     * 背景：getXxx() 的 DEFAULT_ 只是读取时兜底，**不会写进 MMKV**，
+     * 导致重装后配置页仍然是空的、getString 每次都走默认值。
+     * 这里显式落库一次，之后用户改的配置不再被覆盖。
+     */
+    private const val KEY_DEFAULTS_SEEDED = "KEY_DEFAULTS_SEEDED"
+
+    fun seedDefaultsIfNeeded() {
+        if (getBoolean(KEY_DEFAULTS_SEEDED, false)) return
+
+        // LLM 主力：火山方舟 Agent Plan + DeepSeek-V4.1-Flash
+        if (getString(KEY_LLM_API_KEY, "").isEmpty()) putString(KEY_LLM_API_KEY, DEFAULT_LLM_API_KEY)
+        if (getString(KEY_LLM_BASE_URL, "").isEmpty()) putString(KEY_LLM_BASE_URL, DEFAULT_LLM_BASE_URL)
+        if (getString(KEY_LLM_MODEL_NAME, "").isEmpty()) putString(KEY_LLM_MODEL_NAME, DEFAULT_LLM_MODEL_NAME)
+        if (getString(KEY_LLM_PROVIDER, "").isEmpty()) putString(KEY_LLM_PROVIDER, DEFAULT_LLM_PROVIDER)
+
+        // QQ / 飞书
+        if (getString(KEY_QQ_APP_ID, "").isEmpty()) putString(KEY_QQ_APP_ID, DEFAULT_QQ_APP_ID)
+        if (getString(KEY_QQ_APP_SECRET, "").isEmpty()) putString(KEY_QQ_APP_SECRET, DEFAULT_QQ_APP_SECRET)
+        if (getString(KEY_FEISHU_APP_ID, "").isEmpty()) putString(KEY_FEISHU_APP_ID, DEFAULT_FEISHU_APP_ID)
+        if (getString(KEY_FEISHU_APP_SECRET, "").isEmpty()) putString(KEY_FEISHU_APP_SECRET, DEFAULT_FEISHU_APP_SECRET)
+
+        putBoolean(KEY_DEFAULTS_SEEDED, true)
+        XLog.i("KVUtils", "default config seeded: model=$DEFAULT_LLM_MODEL_NAME thinking=${isThinkingEnabled()} effort=${getReasoningEffort()}")
+    }
+
+    /**
+     * 读取备用（MiniMax）LLM 配置，供用户想切回 MiniMax 时使用。
+     * 默认主力是火山 Agent Plan；MiniMax 强制思考，关不掉思考开关。
+     */
+    fun getBackupLlmConfig(): Triple<String, String, String> =
+        Triple(BACKUP_LLM_API_KEY, BACKUP_LLM_BASE_URL, BACKUP_LLM_MODEL_NAME)
 
     // ==================== Agent 最大迭代次数 ====================
     private const val KEY_MAX_ITERATIONS = "KEY_MAX_ITERATIONS"

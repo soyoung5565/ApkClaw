@@ -38,6 +38,9 @@ class AppViewModel : ViewModel() {
 
     fun init() {
         initCommon()
+        // 必须在 initAgent 之前：hasLlmConfig() 靠 MMKV 里的实际值判断，
+        // 而 getLlmApiKey() 的默认值只是读取兜底、不会落库（Hermes 2026-10-14）
+        KVUtils.seedDefaultsIfNeeded()
         initAgent()
     }
 

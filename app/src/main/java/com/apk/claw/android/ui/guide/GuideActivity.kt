@@ -57,6 +57,9 @@ class GuideActivity : BaseActivity() {
 
     private fun finishGuide() {
         KVUtils.setGuideShown(true)
+        // 引导结束即写入默认配置，不等 init() —— 新装用户走完引导就该能直接用
+        // （Hermes 2026-10-14：默认配置必须开箱即用）
+        KVUtils.seedDefaultsIfNeeded()
         finish()
     }
 }
