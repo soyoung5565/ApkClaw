@@ -1,287 +1,244 @@
-# ApkClaw
+# MyClaw · 手机里的 AI 助手
 
-[中文文档](README_CN.md)
+> 让 LLM 直接操作你的 Android 手机：在微信 / QQ / 钉钉 / 飞书 / Discord / Telegram 里发一句话，它自己点、按、输入、截图、翻页，直到任务做完再回你一句结果。
+> *Turn your phone into an AI-operated device: send a message on WeChat / QQ / DingTalk / Feishu / Discord / Telegram and the agent taps, types, swipes and reads the screen until the task is done.*
 
-An AI-powered Android automation app that lets an LLM Agent control Android devices (phones) via natural language. Users send instructions through messaging channels (DingTalk, Feishu, QQ, Discord, Telegram), and the AI Agent autonomously executes device operations.
+<img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-Android-7F52FF?logo=kotlin&logoColor=white">
+<img alt="LangChain4j" src="https://img.shields.io/badge/Agent-LangChain4j-8A2BE2?logo=java&logoColor=white">
+<img alt="Android" src="https://img.shields.io/badge/Android-API%2028%2B-3DDC84?logo=android&logoColor=white">
+<img alt="License" src="https://img.shields.io/badge/License-Apache%202.0-D22128?logo=apache&logoColor=white">
 
-## Screenshots
+---
+
+## 这是什么
+
+一个装在手机上的 Agent。它不只会聊天，而是**替人操作设备**：你说"把微信第三条未读转给同事并回复已收到"，它在无障碍服务上真的点开微信、滚动列表、点进会话、输入文字、发送，然后把结果发回原聊天窗口。
+
+它的骨架来自开源项目 [ApkClaw](https://github.com/apkclaw-team/ApkClaw)（Apache-2.0），**本仓库是在其之上做的二次开发**，我负责的部分见下方「我做了什么」。
+
+## 截图
 
 <p align="center">
-  <img src="Screenshots/Home.jpg" width="300" alt="Home - Permission Management" />
-  <img src="Screenshots/Setting.jpg" width="300" alt="Settings - LLM & Channel Config" />
+  <img src="Screenshots/Home.jpg" width="300" alt="首页 - 权限管理" />
+  <img src="Screenshots/Setting.jpg" width="300" alt="设置 - LLM 与渠道配置" />
 </p>
 
-## Architecture Overview
+---
+
+## 🛠 我做了什么
+
+本仓库相对上游基线共 **84 个文件、+5816 / −741 行**的改动，集中在 5 个方向：
+
+### 1. 自定义 LLM Provider 与思考深度控制
+
+上游只有 OpenAI / Anthropic 两套客户端。我把它改成**可插拔的自定义 Provider**，并加了一整套推理策略层：
+
+- `ReasoningPolicy` —— 按模型名识别模型家族（MiniMax / OpenAI / Anthropic…），为不同厂商生成各自的**思考预算规划**（`effort` = `min` / `medium` / `max`）
+- `thinkingEnabled` + `reasoningEffort` 两级开关，落到 `AgentConfig`（`maxIterations` 默认 500、`maxTokens` 8192）
+- `CURRENT_APP` 注入 —— 解决 Agent **把自己当成当前应用**的身份幻觉
+
+### 2. 实时日志系统
+
+排查问题的时候，"App 没反应"是最没用的信息。所以我做了一套完整的日志链路：
+
+| 组件 | 作用 |
+|---|---|
+| `GlobalLogInterceptor` | 挂在**所有** HTTP 客户端上（QQ / 飞书 / Discord / Telegram / 微信），统一记录 URL、方法、状态码、耗时 |
+| `LogRecorder` | 落盘为结构化日志文件，可暂停 / 恢复 |
+| `LogViewerActivity` | App 内日志查看器，按文件分组展示 |
+
+### 3. 配置服务扩展
+
+上游的配置服务器只有 `/api/channels` 和 `/api/llm` 两个接口。我扩到 **8 个业务端点 + 4 个调试端点**：
 
 ```
-┌────────────────────────────────────────────────────────────────────┐
-│                   Messaging Channels                               │
-│  DingTalk  │  Feishu  │  QQ  │  Discord  │  Telegram  |  WeChat    │
-└──────────────────────┬─────────────────────────────────────────────┘
-                       │ Incoming message
+/api/channels              /api/llm
+/api/agent/max-iterations   /api/agent/max-tokens
+/api/agent/thinking         /api/debug/tools
+/api/debug/execute          /api/debug/screen-full
+```
+
+`/api/debug/execute` 可以直接在浏览器里执行任意工具并看结果 —— 调试 Agent 行为不用点手机。
+
+### 4. 新增工具能力
+
+| 工具 | 说明 |
+|---|---|
+| `ClipboardTool` | 读 / 写剪贴板（含独立的 `ClipboardReaderActivity` 兜底） |
+| `DumpFullUiTool` | 导出**完整** UI 树（上游只能拿到可见节点） |
+| `SystemKeyTool` | 系统按键注入 |
+| `ScrollToFindTool` | 滚动查找目标元素 —— 滑动列表里找东西，Agent 自己就能翻页 |
+
+### 5. 微信官方渠道 + 工程加固
+
+- **微信渠道完整接入**（7 个文件）：`WeChatChannelHandler` / `WeChatCdn` / `WeChatMarkdown` / `WeChatInbound` / `WeChatSender`…
+- **QQ 重连退避 + DNS 预检**（重连失败时先查 DNS，而不是盲目重试）
+- **密钥编译期注入**：`local.properties` → `BuildConfig`，源码里**不再有任何密钥常量**
+- **修好 Gradle 编译**（这个项目从 2026-05 起就编不过了，一直坏着）
+
+---
+
+## 🏗 架构
+
+```
+┌───────────────────────────────────────────────────────────────┐
+│                      消息渠道                                  │
+│  微信  │  QQ  │  钉钉  │  飞书  │  Discord  │  Telegram         │
+└──────────────────────┬────────────────────────────────────────┘
+                       │ 收到消息
                        ▼
               ┌─────────────────┐
-              │  ChannelManager  │  Message routing & dispatch
+              │  ChannelManager  │  消息路由与分发
               └────────┬────────┘
-                       │
-              ┌────────▼────────┐
-              │ TaskOrchestrator │  Task lock & lifecycle mgmt
-              └────────┬────────┘
-                       │
-              ┌────────▼────────┐
-              │  AgentService    │  Agent loop
-              │                  │
-              │  ┌────────────┐  │
-              │  │  LLM Call  │◄─┼── LangChain4j (OpenAI / Anthropic)
-              │  └─────┬──────┘  │
-              │        │         │
-              │  ┌─────▼──────┐  │
-              │  │  Tool Exec │◄─┼── ToolRegistry → ClawAccessibilityService
-              │  └─────┬──────┘  │
-              │        │         │
-              │   Loop until     │
-              │   task complete  │
-              └────────┬────────┘
-                       │
                        ▼
-              Reply to user via channel
+              ┌──────────────────────────┐
+              │      TaskOrchestrator     │  任务锁、生命周期
+              └────────┬─────────────────┘
+                       ▼
+              ┌──────────────────────────┐
+              │  AgentService（Agent 循环）│
+              │                          │
+              │  ┌────────────┐          │
+              │  │  LLM 调用  │◄─ LangChain4j（OpenAI / Anthropic / 自定义）│
+              │  └─────┬──────┘          │
+              │  ┌─────▼──────┐          │
+              │  │  工具执行   │◄─ ToolRegistry → ClawAccessibilityService│
+              │  └─────┬──────┘          │
+              │   循环直到任务完成          │
+              └────────┬─────────────────┘
+                       ▼
+              通过原渠道回复用户
 ```
 
-## Star History
+### Agent 循环协议
 
-![Star History Chart](https://api.star-history.com/svg?repos=apkclaw-team/ApkClaw)
+遵循 **观察 → 思考 → 行动 → 验证**：
 
-## Core Execution Flow
+- **系统提示词**注入设备上下文（品牌 / 型号 / Android 版本 / 分辨率）+ 已注册工具清单 + 安全约束
+- **LLM 重试**最多 3 次，指数退避 1s → 2s → 4s；遇到 401 / 403 **不重试**（重试没意义，只会浪费额度）
+- **死循环检测**：维护 4 轮滑动窗口 `(screenHash, toolCall)` 指纹，全同则注入系统消息强制换路
+- **Token 优化**：历史 `get_screen_info` 结果替换为占位符，只保留最近一次
+- **系统弹窗处理**：`getRootInActiveWindow()` 返回 null（受保护弹窗）时截图发给用户并终止任务，而不是死磕
 
-1. **User** sends a natural language message through any connected channel
-2. **ChannelSetup** checks that the accessibility service is running
-3. **TaskOrchestrator** acquires the task lock (single-task model) and presses Home to reset device state
-4. **DefaultAgentService** enters the agent loop:
-   - Builds system prompt with device context (brand, model, resolution, registered tools)
-   - Calls LLM with tool definitions (via LangChain4j bridge)
-   - Extracts tool calls from LLM response
-   - Executes tools via **ToolRegistry** → **ClawAccessibilityService**
-   - Feeds tool results back to LLM
-   - Loops until the `finish` tool is called or max iterations (40) are reached
-5. **Result** is sent back to the user through the same channel
+### 工具系统
 
-## Agent System
+工具按设备类型在 `ToolRegistry` 注册，每个工具继承 `BaseTool`，提供**中英双语描述**与类型化参数声明。
 
-### Agent Loop (`DefaultAgentService`)
+**通用工具**：`get_screen_info` / `find_node_info` / `dump_full_ui` / `take_screenshot` / `input_text` / `open_app` / `get_installed_apps` / `press_back` / `press_home` / `open_recent_apps` / `expand_notifications` / `collapse_notifications` / `lock_screen` / `system_key` / `clipboard` / `wait` / `repeat_actions` / `send_file` / `finish`
 
-The agent follows an **Observe → Think → Act → Verify** protocol:
+**手机专属**：`tap` / `long_press` / `swipe` / `click_by_text` / `click_by_id` / `scroll_to_find` / `search_app_in_store`
 
-- **System Prompt**: Injects device info (brand, model, Android version, screen resolution), registered tool list, and safety constraints
-- **LLM Call Retry**: Up to 3 attempts with exponential backoff (1s → 2s → 4s); no retry on 401/403
-- **Loop Detection**: Maintains a 4-round sliding window of `(screenHash, toolCall)` fingerprints; if all identical, injects a system message forcing the agent to try a different approach
-- **Token Optimization**: Replaces historical `get_screen_info` results with placeholders to save tokens, keeping only the most recent one
-- **System Dialog Handling**: When `getRootInActiveWindow()` returns null (protected system dialog detected), takes a screenshot, sends it to the user, and aborts the task
+### 无障碍服务
 
-### LLM Integration
+`ClawAccessibilityService`（Java）是设备交互核心层：
 
-Pluggable LLM backends via `LlmClientFactory`:
+- **手势**：`dispatchGesture()` 实现点击 / 滑动 / 长按
+- **节点遍历**：`getRootInActiveWindow()` 获取 UI 层级
+- **按键注入**：`performGlobalAction()` 实现 Home / 返回 / 最近任务
+- **截屏**：`takeScreenshot()`（需 Android 11+）
 
-| Provider | Client Class | Model Builder |
-|----------|-------------|---------------|
-| OpenAI-compatible | `OpenAiLlmClient` | `OpenAiChatModel` / `OpenAiStreamingChatModel` |
-| Anthropic | `AnthropicLlmClient` | `AnthropicChatModel` / `AnthropicStreamingChatModel` |
+> **已知限制**：系统保护窗口（如 `com.android.permissioncontroller` 的权限弹窗）会同时阻断节点树读取和手势注入（`filterTouchesWhenObscured` 机制）。Agent 检测到后截图通知用户手动处理 —— 这是系统级限制，无法在应用层绕过。
 
-Both streaming and non-streaming modes are supported. The HTTP layer uses a custom `OkHttpClientBuilderAdapter` (OkHttp-based) instead of JDK HttpClient for Android compatibility.
+### 局域网配置服务器
 
-**Configuration** (`AgentConfig`):
-- `apiKey`: From local settings
-- `baseUrl`: LLM endpoint (default: `https://api.openai.com/v1`)
-- `modelName`: User-selectable
-- `provider`: `OPENAI` (default) or `ANTHROPIC`
-- `temperature`: 0.1 (deterministic output)
-- `maxIterations`: 40
-- `streaming`: Configurable (default: off)
+基于 NanoHTTPD 的 HTTP 服务，端口 **9527**，方便用 PC 浏览器配置手机：
 
-### LangChain4j Bridge
+| 端点 | 方法 | 用途 |
+|---|---|---|
+| `/` | GET | 配置页面 |
+| `/api/channels` | GET/POST | 渠道凭证 |
+| `/api/llm` | GET/POST | LLM 配置 |
+| `/api/agent/max-iterations` | GET/POST | 最大迭代轮数 |
+| `/api/agent/max-tokens` | GET/POST | 单次最大 token |
+| `/api/agent/thinking` | GET/POST | 思考开关 + 强度 |
+| `/api/debug/tools` | GET | 列出已注册工具（Debug） |
+| `/api/debug/execute` | POST | 直接执行工具（Debug） |
+| `/api/debug/screen-full` | GET | 完整 UI 树（Debug） |
 
-`LangChain4jToolBridge` converts custom `BaseTool` abstractions into LangChain4j's `ToolSpecification` format, mapping parameter types (`string`, `integer`, `number`, `boolean`) to JSON Schema.
+GET 返回的密钥做**脱敏**（仅显示末 4 位）。Debug 构建额外提供 `/debug.html` 工具调试控制台。
 
-## Tool System
+---
 
-Tools are registered in `ToolRegistry` by device type:
+## 🚀 构建与运行
 
-### Common Tools (All Devices)
-| Tool | Description |
-|------|-------------|
-| `get_screen_info` | Get UI hierarchy tree for AI to analyze the current screen |
-| `find_node_info` | Find elements by text or resource ID |
-| `take_screenshot` | Capture current screen as PNG |
-| `input_text` | Input text into the focused field |
-| `open_app` | Open an app by name |
-| `get_installed_apps` | List installed applications |
-| `press_back` / `press_home` | Navigate back / Go to home screen |
-| `open_recent_apps` | Open recent apps |
-| `expand_notifications` / `collapse_notifications` | Expand / Collapse notification shade |
-| `lock_screen` | Lock the screen |
-| `wait` | Wait for a specified duration |
-| `repeat_actions` | Repeat a set of actions |
-| `send_file` | Send a file to the user via channel |
-| `finish` | Complete the task and return a summary |
-
-### Phone-Specific Tools
-| Tool | Description |
-|------|-------------|
-| `tap` | Tap at coordinates (x, y) |
-| `long_press` | Long press at coordinates |
-| `swipe` | Swipe from point A to point B |
-| `click_by_text` | Click an element by visible text |
-| `click_by_id` | Click an element by resource ID |
-| `search_app_in_store` | Search for an app in the app store |
-
-Each tool extends `BaseTool`, implements `execute(Map<String, Any>): ToolResult`, and provides bilingual (Chinese/English) descriptions with typed parameter declarations.
-
-## Channel System
-
-| Channel | Protocol | Required Credentials |
-|---------|----------|---------------------|
-| DingTalk | App Stream Client | Client ID + Client Secret |
-| Feishu | OAPI SDK | App ID + App Secret |
-| QQ | QQ Bot API | App ID + App Secret |
-| Discord | Gateway WebSocket + REST | Bot Token |
-| Telegram | Bot HTTP API | Bot Token |
-
-Channel credentials can be configured via the in-app settings page or the LAN HTTP server (`http://<device-ip>:9527`).
-
-## Accessibility Service
-
-`ClawAccessibilityService` (Java) is the core device interaction layer:
-- **Gestures**: Tap, swipe, long press via `dispatchGesture()`
-- **Node Traversal**: UI hierarchy tree via `getRootInActiveWindow()`
-- **Key Injection**: Home, Back, Recents via `performGlobalAction()`
-- **Screenshot**: `takeScreenshot()` (requires Android 11+)
-
-**Known Limitation**: Protected system windows (e.g., `com.android.permissioncontroller` permission dialogs) block both node tree access and gesture injection (`filterTouchesWhenObscured`). The agent detects this, takes a screenshot, and notifies the user to handle it manually.
-
-## LAN Configuration Server
-
-A NanoHTTPD-based HTTP server runs on port 9527 for convenient configuration from a PC browser:
-
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/` | GET | Configuration web page |
-| `/api/channels` | GET/POST | Read/update channel credentials |
-| `/api/llm` | GET/POST | Read/update LLM configuration |
-
-Secrets are masked (only last 4 characters shown) when retrieved via GET. Debug builds additionally expose `/debug.html` with a tool execution console.
-
-## Project Structure
-
-```
-app/src/main/java/com/apk/claw/android/
-├── agent/                  # Agent loop, config, callbacks
-│   ├── langchain/          # LangChain4j bridge & OkHttp adapter
-│   └── llm/                # LLM clients (OpenAI, Anthropic)
-├── base/                   # BaseActivity (screen density adaptation)
-├── channel/                # Messaging channel handlers
-│   ├── dingtalk/
-│   ├── feishu/
-│   ├── qqbot/
-│   ├── discord/
-│   └── telegram/
-├── floating/               # Floating button UI manager
-├── server/                 # LAN config & debug HTTP server
-├── service/                # Accessibility, foreground, keep-alive services
-├── tool/                   # Tool abstraction layer & registry
-│   └── impl/               # Tool implementations (common/phone/TV)
-├── ui/                     # Activities (splash, home, guide, settings)
-├── utils/                  # KVUtils, XLog, formatting utilities
-└── widget/                 # Custom UI components
-```
-
-## Build & Run
-
-### Requirements
+### 环境要求
 
 - Java 17+
-- Android Studio (Ladybug or later recommended)
-- Android SDK 36 (compile/target), min SDK 28
+- Android Studio（Ladybug 或更高）
+- Android SDK 36（compile / target），最低 SDK 28
+- Android 设备（Android 9+）
 
-### Build
+### 构建
 
 ```bash
-# Clone the repository
-git clone https://github.com/apkclaw-team/ApkClaw.git
+git clone https://github.com/soyoung5565/ApkClaw.git
 cd ApkClaw
 
-# Debug build
+# Debug
 ./gradlew assembleDebug
 
-# Release build
+# Release
 ./gradlew assembleRelease
 ```
 
-### Setup
+### 密钥配置
 
-1. **Install** the APK on your Android device (Android 9+)
-2. **Grant permissions** on the home screen — enable all required permissions (Accessibility Service, Notification, System Window, Battery Whitelist, File Access)
-3. **Configure LLM** — go to Settings > LLM Config, fill in:
-   - **API Key**: Your OpenAI or Anthropic API key
-   - **Base URL**: LLM endpoint (default: `https://api.openai.com/v1`, change it if using a custom provider)
-   - **Model Name**: e.g. `gpt-4o`, `claude-sonnet-4-20250514`
-4. **Configure a channel** — go to Settings, pick at least one messaging channel (DingTalk / Feishu / QQ / Discord / Telegram), fill in the bot credentials
-5. **Send a message** via the configured channel to start controlling your device
+密钥**不写进源码**，走编译期注入：
 
-> **Tip**: You can also configure LLM and channel credentials from a PC browser via LAN Config. Enable it in Settings, then visit `http://<device-ip>:9527` on your PC.
+```properties
+# local.properties（不入库，仓库内有 local.properties.example 模板）
+YOUR_LLM_API_KEY=your_key_here
+YOUR_QQ_APP_ID=your_app_id
+YOUR_QQ_APP_SECRET=your_app_secret
+```
 
-## Key Dependencies
+编译时读入 `BuildConfig`。也可以直接在 App 内设置页填写，或用局域网配置页。
+
+### 使用步骤
+
+1. **安装** APK 到设备
+2. **授权** —— 在首页依次开启：无障碍服务、通知权限、悬浮窗、电池白名单、文件访问
+3. **配置 LLM** —— 设置 > LLM Config，填 API Key / Base URL / Model Name
+4. **配置渠道** —— 至少配一个（微信 / QQ / 钉钉 / 飞书 / Discord / Telegram）
+5. **发消息** —— 从配置好的渠道发一句自然语言指令，Agent 开始干活
+
+> **提示**：也可以用 PC 浏览器连 `http://<设备IP>:9527` 配，不用在手机上打字。
+
+---
+
+## 🔧 主要依赖
 
 **AI / Agent**
 
-| Dependency | Version | Purpose |
-|------------|---------|---------|
-| [LangChain4j](https://github.com/langchain4j/langchain4j) | 1.12.2 | Agent orchestration, tool definitions, LLM integration |
+| 依赖 | 版本 | 用途 |
+|---|---|---|
+| [LangChain4j](https://github.com/langchain4j/langchain4j) | 1.12.2 | Agent 编排、工具定义、LLM 集成 |
 
-**Messaging Channels**
+**消息渠道**
 
-| Dependency | Version | Purpose |
-|------------|---------|---------|
-| [DingTalk Stream Client](https://github.com/open-dingtalk/dingtalk-stream-sdk-java) | 1.3.12 | DingTalk channel |
-| [Feishu OAPI SDK](https://github.com/larksuite/oapi-sdk-java) | 2.5.3 | Feishu / Lark channel |
+| 依赖 | 版本 | 用途 |
+|---|---|---|
+| [DingTalk Stream SDK](https://github.com/open-dingtalk/dingtalk-stream-sdk-java) | 1.3.12 | 钉钉渠道 |
+| [Feishu OAPI SDK](https://github.com/larksuite/oapi-sdk-java) | 2.5.3 | 飞书 / Lark 渠道 |
 
-**Networking**
+**网络 / 存储 / UI**
 
-| Dependency | Version | Purpose |
-|------------|---------|---------|
-| [OkHttp](https://github.com/square/okhttp) | 4.12.0 | HTTP client for LLM calls |
-| [Retrofit](https://github.com/square/retrofit) | 2.11.0 | REST API client |
-| [NanoHTTPD](https://github.com/NanoHttpd/nanohttpd) | 2.3.1 | LAN config & debug HTTP server |
+| 依赖 | 版本 | 用途 |
+|---|---|---|
+| [OkHttp](https://github.com/square/okhttp) | 4.12.0 | HTTP 客户端（LLM 调用） |
+| [Retrofit](https://github.com/square/retrofit) | 2.11.1 | REST API 客户端 |
+| [NanoHTTPD](https://github.com/NanoHttpd/nanohttpd) | 2.3.1 | 局域网配置 & 调试服务器 |
+| [MMKV](https://github.com/Tencent/MMKV) | 2.3.0 | 高性能本地 KV 存储 |
+| [Gson](https://github.com/google/gson) | 2.13.2 | JSON 序列化 |
+| [ZXing](https://github.com/zxing/zxing) | 3.5.3 | 二维码生成 |
+| [Glide](https://github.com/bumptech/glide) | 5.0.5 | 图片加载 |
+| [EasyFloat](https://github.com/princekin-f/EasyFloat) | 2.0.4 | 悬浮窗 |
+| [UtilCode](https://github.com/Blankj/AndroidUtilCode) | 1.31.1 | Android 工具函数 |
 
-**Storage & Utilities**
+---
 
-| Dependency | Version | Purpose |
-|------------|---------|---------|
-| [MMKV](https://github.com/Tencent/MMKV) | 2.3.0 | High-performance local key-value storage |
-| [Gson](https://github.com/google/gson) | 2.13.2 | JSON serialization |
-| [ZXing](https://github.com/zxing/zxing) | 3.5.3 | QR code generation |
-| [UtilCode](https://github.com/Blankj/AndroidUtilCode) | 1.31.1 | Android utility functions |
+## 📄 License
 
-**UI**
+[Apache License 2.0](LICENSE) —— 与上游 [apkclaw-team/ApkClaw](https://github.com/apkclaw-team/ApkClaw) 保持一致。
 
-| Dependency | Version | Purpose |
-|------------|---------|---------|
-| [Glide](https://github.com/bumptech/glide) | 5.0.5 | Image loading |
-| [EasyFloat](https://github.com/princekin-f/EasyFloat) | 2.0.4 | Floating window |
-| [MultiType](https://github.com/drakeet/MultiType) | 4.3.0 | RecyclerView multi-type adapter |
-
-## License
-
-```
-Copyright 2026 ApkClaw
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-```
+**致谢**：本项目基于 [apkclaw-team/ApkClaw](https://github.com/apkclaw-team/ApkClaw) 开发，Thanks。
