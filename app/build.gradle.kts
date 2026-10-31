@@ -1,5 +1,3 @@
-import jdk.internal.net.http.common.Log.channel
-import org.jetbrains.kotlin.konan.properties.hasProperty
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.text.SimpleDateFormat
@@ -50,9 +48,10 @@ android {
         // ===== 密钥类配置一律从 local.properties / Gradle property 注入，不写进源码 =====
         // 原因：源码入库 = 密钥入库。CI 或他人 clone 后按 local.properties.example 填写即可。
         // 读取优先级：-P 参数 > local.properties > 空串（由用户在 App 设置页手动填写）。
-        buildConfigField("String", "DEFAULT_LLM_API_KEY", getParameter("DEFAULT_LLM_API_KEY", "\"\""))
-        buildConfigField("String", "BACKUP_LLM_API_KEY", getParameter("BACKUP_LLM_API_KEY", "\"\""))
-        buildConfigField("String", "DEFAULT_QQ_APP_SECRET", getParameter("DEFAULT_QQ_APP_SECRET", "\"\""))
+        // getSecretParameter 返回已加引号的 Java 字面量，可直接喂给 buildConfigField。
+        buildConfigField("String", "DEFAULT_LLM_API_KEY", getSecretParameter("DEFAULT_LLM_API_KEY"))
+        buildConfigField("String", "BACKUP_LLM_API_KEY", getSecretParameter("BACKUP_LLM_API_KEY"))
+        buildConfigField("String", "DEFAULT_QQ_APP_SECRET", getSecretParameter("DEFAULT_QQ_APP_SECRET"))
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -163,15 +162,19 @@ androidComponents {
 }
 
 fun getVersionGit(): String {
-    val process1 = Runtime.getRuntime().exec("git rev-parse --abbrev-ref HEAD")
-    val reader1 = BufferedReader(InputStreamReader(process1.inputStream))
-    val branch = reader1.readLine()?.trim()
-    reader1.close()
+    // 用 ProcessBuilder 而不是 Runtime.exec(String)：后者在新版 JDK 已废弃，
+    // 在 Gradle 9 + AGP 9 下会因 -Werror 语义直接编译失败。
+    fun runGit(vararg args: String): String {
+        val proc = ProcessBuilder(listOf("git") + args)
+            .redirectErrorStream(true)
+            .start()
+        val out = proc.inputStream.bufferedReader().use { it.readText() }
+        proc.waitFor()
+        return out.trim()
+    }
 
-    val process2 = Runtime.getRuntime().exec("git rev-parse HEAD")
-    val reader2 = BufferedReader(InputStreamReader(process2.inputStream))
-    val sha1 = reader2.readLine()?.trim()
-    reader2.close()
+    val branch = runGit("rev-parse", "--abbrev-ref", "HEAD")
+    val sha1 = runGit("rev-parse", "HEAD")
     // 将数据拼接起来，如果只需要SHA-1 那么就可以不执行process1命令
     return "\"" + branch + "_" + sha1 + "\""
 }
@@ -188,7 +191,8 @@ fun getParameter(key: String, defaultValue: String): String {
         val property = project.properties[key] as String?
         if (!property.isNullOrEmpty()) {
             value = property
-            println("get property[$key]from project:$value")
+            // 不打印值本身：构建日志会进 CI，密钥必须不落到日志里。
+            println("get property[$key] from project (value hidden)")
             return value
         }
     }
@@ -196,16 +200,38 @@ fun getParameter(key: String, defaultValue: String): String {
     val localProperties = Properties()
     if (localPropertiesFile.exists()) {
         localProperties.load(localPropertiesFile.inputStream())
-        val hasLocalProperty = localProperties.hasProperty(key)
+        // 注意：不能用 localProperties.hasProperty(...) —— 那是 Kotlin/Native 的扩展，
+        // JVM 上不存在，会导致脚本编译失败。这里用 Java 原生的 containsKey。
+        val hasLocalProperty = localProperties.containsKey(key)
         if (hasLocalProperty) {
             val property = localProperties[key] as String?
             if (!property.isNullOrEmpty()) {
                 value = property
-                println("get property[$key]from local:$value")
+                // 同上：不打印值本身
+                println("get property[$key] from local (value hidden)")
                 return value
             }
         }
     }
-    println("get property[$key] from default:$value")
+    println("get property[$key] from default (value hidden)")
     return value
+}
+
+/**
+ * 读取密钥类参数，返回**已加引号并转义**的 Java 字符串字面量。
+ *
+ * 用途：给 `buildConfigField("String", NAME, value)` 用。
+ * buildConfigField 要求参数是完整的 Java 字面量（含引号），而 local.properties
+ * 里的值是裸字符串 —— 直接塞进去会生成 `String X = abc` 这种非法 Java 代码，
+ * 表现为编译期 "Unresolved reference" 之类的诡异报错。
+ *
+ * @param key     参数名
+ * @param default 未配置时的默认值（裸字符串，会被同样加引号）
+ */
+fun getSecretParameter(key: String, default: String = ""): String {
+    val raw = getParameter(key, default)
+    val escaped = raw.replace("\\", "\\\\").replace("\"", "\\\"")
+    // 不打印密钥内容本身，避免 CI 日志泄漏
+    println("get secret parameter[$key] length=${raw.length}")
+    return "\"$escaped\""
 }
