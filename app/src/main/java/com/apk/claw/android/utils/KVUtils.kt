@@ -1,6 +1,7 @@
 package com.apk.claw.android.utils
 
 import android.content.Context
+import com.apk.claw.android.BuildConfig
 import com.tencent.mmkv.MMKV
 
 /**
@@ -165,7 +166,7 @@ object KVUtils {
     // ==================== QQ 机器人配置 ====================
     fun getQqAppId(): String = getString(KEY_QQ_APP_ID, DEFAULT_QQ_APP_ID).ifEmpty { DEFAULT_QQ_APP_ID }
     fun setQqAppId(value: String) = putString(KEY_QQ_APP_ID, value)
-    fun getQqAppSecret(): String = getString(KEY_QQ_APP_SECRET, DEFAULT_QQ_APP_SECRET).ifEmpty { DEFAULT_QQ_APP_SECRET }
+    fun getQqAppSecret(): String = getString(KEY_QQ_APP_SECRET, defaultQqAppSecret).ifEmpty { defaultQqAppSecret }
     fun setQqAppSecret(value: String) = putString(KEY_QQ_APP_SECRET, value)
 
     // ==================== Discord 机器人配置 ====================
@@ -189,33 +190,39 @@ object KVUtils {
     fun isConfigServerEnabled(): Boolean = getBoolean(KEY_CONFIG_SERVER_ENABLED, false)
     fun setConfigServerEnabled(enabled: Boolean) = putBoolean(KEY_CONFIG_SERVER_ENABLED, enabled)
 
-    // ===== 默认配置（首次启动自动填充，用户 2026-10-14 明确要求开箱即用） =====
+    // ===== 默认配置 =====
+    // 密钥一律不写进源码：编译期从 local.properties / -P 参数注入 BuildConfig，
+    // 未配置时为空串，由用户在 App「设置」页手动填写（见 LlmConfigActivity）。
+    // 原因：源码入库 = 密钥入库，clone 本仓库的人不应拿到任何人的真实凭证。
+    //
     // LLM 主力：火山方舟 Agent Plan + DeepSeek-V4.1-Flash
     //   Agent Plan 走 OpenAI 兼容端点，长任务不消耗 token 额度。
     //   模型选择说明：该模型官方 Chat API 支持 reasoning_effort none/low/high/max，
     //   能真正关思考、能开到 max，是当前 Agent 场景的最优解。
-    private const val DEFAULT_LLM_API_KEY = "YOUR_VOLCENGINE_API_KEY"
     private const val DEFAULT_LLM_BASE_URL = "https://ark.cn-beijing.volces.com/api/plan/v3"
     private const val DEFAULT_LLM_MODEL_NAME = "deepseek-v4.1-flash"
     private const val DEFAULT_LLM_PROVIDER = "openai"
     // 备用 LLM：MiniMax 开放平台（用户 2026-10-14 常用）
     //   注意：M3.1-Flash-Preview 强制开启思考，思考开关对它无效（传 disabled 返回 400）。
-    private const val BACKUP_LLM_API_KEY = "YOUR_MINIMAX_API_KEY"
     private const val BACKUP_LLM_BASE_URL = "https://api.minimaxi.com/v1"
     private const val BACKUP_LLM_MODEL_NAME = "MiniMax-M3.1-Flash-Preview"
     // QQ bot (用户最新, 2026-07-31 截图)
     private const val DEFAULT_QQ_APP_ID = "102865813"
-    private const val DEFAULT_QQ_APP_SECRET = "YOUR_QQ_APP_SECRET"
     // Feishu (保留旧默认, 暂未使用)
     private const val DEFAULT_FEISHU_APP_ID = ""   // 用户 2026-10-14：飞书停用
     private const val DEFAULT_FEISHU_APP_SECRET = ""   // 用户 2026-10-14：飞书停用
+
+    /** 编译期注入的默认密钥（来自 local.properties，未配置时为空串） */
+    private val defaultLlmApiKey: String = BuildConfig.DEFAULT_LLM_API_KEY
+    private val backupLlmApiKey: String = BuildConfig.BACKUP_LLM_API_KEY
+    private val defaultQqAppSecret: String = BuildConfig.DEFAULT_QQ_APP_SECRET
 
     private const val KEY_LLM_API_KEY = "KEY_LLM_API_KEY"
     private const val KEY_LLM_BASE_URL = "KEY_LLM_BASE_URL"
     private const val KEY_LLM_MODEL_NAME = "KEY_LLM_MODEL_NAME"
     private const val KEY_LLM_PROVIDER = "KEY_LLM_PROVIDER"
 
-    fun getLlmApiKey(): String = getString(KEY_LLM_API_KEY, DEFAULT_LLM_API_KEY).ifEmpty { DEFAULT_LLM_API_KEY }
+    fun getLlmApiKey(): String = getString(KEY_LLM_API_KEY, defaultLlmApiKey).ifEmpty { defaultLlmApiKey }
     fun setLlmApiKey(value: String) = putString(KEY_LLM_API_KEY, value)
     fun getLlmBaseUrl(): String = getString(KEY_LLM_BASE_URL, DEFAULT_LLM_BASE_URL).ifEmpty { DEFAULT_LLM_BASE_URL }
     fun setLlmBaseUrl(value: String) = putString(KEY_LLM_BASE_URL, value)
@@ -242,14 +249,14 @@ object KVUtils {
         if (getBoolean(KEY_DEFAULTS_SEEDED, false)) return
 
         // LLM 主力：火山方舟 Agent Plan + DeepSeek-V4.1-Flash
-        if (getString(KEY_LLM_API_KEY, "").isEmpty()) putString(KEY_LLM_API_KEY, DEFAULT_LLM_API_KEY)
+        if (getString(KEY_LLM_API_KEY, "").isEmpty()) putString(KEY_LLM_API_KEY, defaultLlmApiKey)
         if (getString(KEY_LLM_BASE_URL, "").isEmpty()) putString(KEY_LLM_BASE_URL, DEFAULT_LLM_BASE_URL)
         if (getString(KEY_LLM_MODEL_NAME, "").isEmpty()) putString(KEY_LLM_MODEL_NAME, DEFAULT_LLM_MODEL_NAME)
         if (getString(KEY_LLM_PROVIDER, "").isEmpty()) putString(KEY_LLM_PROVIDER, DEFAULT_LLM_PROVIDER)
 
         // QQ / 飞书
         if (getString(KEY_QQ_APP_ID, "").isEmpty()) putString(KEY_QQ_APP_ID, DEFAULT_QQ_APP_ID)
-        if (getString(KEY_QQ_APP_SECRET, "").isEmpty()) putString(KEY_QQ_APP_SECRET, DEFAULT_QQ_APP_SECRET)
+        if (getString(KEY_QQ_APP_SECRET, "").isEmpty()) putString(KEY_QQ_APP_SECRET, defaultQqAppSecret)
         if (getString(KEY_FEISHU_APP_ID, "").isEmpty()) putString(KEY_FEISHU_APP_ID, DEFAULT_FEISHU_APP_ID)
         if (getString(KEY_FEISHU_APP_SECRET, "").isEmpty()) putString(KEY_FEISHU_APP_SECRET, DEFAULT_FEISHU_APP_SECRET)
 
@@ -262,7 +269,7 @@ object KVUtils {
      * 默认主力是火山 Agent Plan；MiniMax 强制思考，关不掉思考开关。
      */
     fun getBackupLlmConfig(): Triple<String, String, String> =
-        Triple(BACKUP_LLM_API_KEY, BACKUP_LLM_BASE_URL, BACKUP_LLM_MODEL_NAME)
+        Triple(backupLlmApiKey, BACKUP_LLM_BASE_URL, BACKUP_LLM_MODEL_NAME)
 
     // ==================== Agent 最大迭代次数 ====================
     private const val KEY_MAX_ITERATIONS = "KEY_MAX_ITERATIONS"

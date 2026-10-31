@@ -47,6 +47,12 @@ android {
         versionCode = 4
         versionName = "0.0.4"
         buildConfigField("String", "VERSION_INFO", getVersionGit())
+        // ===== 密钥类配置一律从 local.properties / Gradle property 注入，不写进源码 =====
+        // 原因：源码入库 = 密钥入库。CI 或他人 clone 后按 local.properties.example 填写即可。
+        // 读取优先级：-P 参数 > local.properties > 空串（由用户在 App 设置页手动填写）。
+        buildConfigField("String", "DEFAULT_LLM_API_KEY", getParameter("DEFAULT_LLM_API_KEY", "\"\""))
+        buildConfigField("String", "BACKUP_LLM_API_KEY", getParameter("BACKUP_LLM_API_KEY", "\"\""))
+        buildConfigField("String", "DEFAULT_QQ_APP_SECRET", getParameter("DEFAULT_QQ_APP_SECRET", "\"\""))
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

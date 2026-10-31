@@ -1,0 +1,33 @@
+# 本地配置模板 —— 复制为 local.properties 后填入真实值
+#
+# 为什么需要这个文件：
+#   源码里不能写 API Key / Secret（写进去 = 提交上去 = 泄漏给所有 clone 的人）。
+#   本项目在编译期从 local.properties（或 -P 参数）读取这些值注入 BuildConfig，
+#   App 首次启动时自动预填到设置页；不填也能用，在 App 设置页手动输入即可。
+#
+# 使用方法：
+#   cp local.properties.example local.properties
+#   然后把下面的空值替换成你的真实密钥。
+#
+# 注意：local.properties 已被 .gitignore 排除，不会被提交。
+
+# ===== Android SDK 路径（必填，由 Android Studio 自动生成）=====
+sdk.dir=D:/android-sdk
+
+# ===== LLM 主力：火山方舟 Agent Plan（OpenAI 兼容端点）=====
+# 可选。不填则 App 设置页留空，由用户手动输入。
+DEFAULT_LLM_API_KEY=
+
+# ===== 备用 LLM：MiniMax 开放平台 =====
+# 可选。
+BACKUP_LLM_API_KEY=
+
+# ===== QQ 机器人 App Secret =====
+# 可选。App ID 是公开的（102865813），Secret 必须自己填。
+DEFAULT_QQ_APP_SECRET=
+
+# ===== 发布签名（可选；不填则回退到 Android 默认 debug 签名）=====
+KEYSTORE_FILE=myclaw-release.jks
+KEYSTORE_PASSWORD=
+KEY_ALIAS=myclaw
+KEY_PASSWORD=
